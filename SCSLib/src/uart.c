@@ -44,19 +44,6 @@ extern UART_HandleTypeDef huart1;
   * @brief UART 接收中断服务程序
   * 说明：当USART1接收到数据时会触发此中断服务程序，程序会将接收到的数据存入uartBuf缓冲区，并更新tail指针。用户可以通过调用Uart_Read函数从缓冲区中读取数据。需要注意的是，缓冲区大小为128字节，如果接收数据过快可能会导致数据丢失，因此建议在使用时合理设置波特率和处理接收数据的速度。   
   */
-void USART1_IRQHandler(void)
-{
-	if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_ORE) != RESET)
-	{
-		__HAL_UART_CLEAR_OREFLAG(&huart1);
-	}
-	
-	if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET)
-	{
-		uartBuf[tail] = (uint8_t)(huart1.Instance->RDR & 0x00FF);
-		tail = (tail+1)%128;
-	}
-}
 
 void Uart_Send(uint8_t *buf , uint8_t len)
 {
