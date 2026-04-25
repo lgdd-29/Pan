@@ -193,6 +193,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   /*初始化所有已配置的外围设备*/
   StepMotor->fun->Init(StepMotor);
+  PanMotor->fun->Motor_Init(PanMotor);
   Menu_Init(menu, &title); // 初始化菜单，传入title实例地址以供菜单访问和修改
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
   KEY_Driver key[3] = {     
@@ -225,6 +226,10 @@ int main(void)
     if(title.tim_flag==1)
     {
       title.tim_flag=0;
+      PanMotor->fun->MPID_OUT(PanMotor,title.y,0); // 进行位置控制计算，并更新PanMotor的输出
+      StepMotor->fun->PID_OUT(StepMotor,title.x,0); // 进行位置控制计算，并更新StepMotor的输出
+      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
+      StepMotor->fun->Move(StepMotor,StepMotor->var.pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
     }
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
     keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号

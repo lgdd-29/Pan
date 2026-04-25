@@ -48,7 +48,6 @@ void PanMPID_OUT(Motor_Driver *motor,float target,float now)
     motor->var.integral += motor->var.error;
     float derivative = motor->var.error - motor->var.last_error;
     motor->var.out += motor->var.Kp * motor->var.error + motor->var.Ki * motor->var.integral + motor->var.Kd * derivative;
-    PanMotor_Move(motor, (int16_t)motor->var.out);
     motor->var.last_error = motor->var.error;
 }
 
