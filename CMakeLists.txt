@@ -46,6 +46,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Lib/Src/EMM_V5.c
+    Lib/Src/StepMotor.c
 )
 
 # Add include paths
