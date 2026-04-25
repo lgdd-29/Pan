@@ -24,6 +24,7 @@
 #include "StepMotor.h"
 #include "Key.h"
 #include "Motor.h"
+#include "menu.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
@@ -32,6 +33,8 @@
 /* USER CODE BEGIN PTD */
 StepMotor_Driver *StepMotor;
 Motor_Driver *PanMotor;
+Menu menu_instance;
+Menu *menu = &menu_instance;
 title_Driver title={
   .Data_receive=NULL,
   .ready=0,
@@ -190,6 +193,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   /*初始化所有已配置的外围设备*/
   StepMotor->fun->Init(StepMotor);
+  Menu_Init(menu, &title); // 初始化菜单，传入title实例地址以供菜单访问和修改
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
   KEY_Driver key[3] = {     
     Key_Create(GPIOD, GPIO_PIN_8),
@@ -212,15 +216,19 @@ int main(void)
 
 
   uint8_t keynum=0;
-  int16_t stepnum=0;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    //TODO 这里是主循环的核心部分，主要负责处理按键输入和更新菜单显示
+    if(title.tim_flag==1)
+    {
+      title.tim_flag=0;
+    }
+    //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
     keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
-    if(keynum==1) {stepnum+=20;PanMotor->fun->Motor_Move(PanMotor,stepnum);} // 按键1被按下，电机正转1000步，速度200步/秒
-    else if(keynum==3) {stepnum-=20;PanMotor->fun->Motor_Move(PanMotor,stepnum);} // 按键2被按下，电机反转1000步，速度200步/秒
+    Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
   }
   /* USER CODE END 3 */
 }

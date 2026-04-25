@@ -4,81 +4,32 @@
 #include "Motor.h"     // 只在这里include，对外隐藏
 #include "main.h"
 
-#define PAGE_COUNT 3  //一共几页菜单
+#define PAGE_COUNT 1  //一共几页菜单
 
 static int16_t page_index = 1;  // 当前选中参数索引
 static int8_t menu_index = 0;  // 当前选中参数索引
 static int8_t start_line = 0;   // 菜单窗口起始行（新加！）
 
-
-
-
-static MenuItem M_VAR_menu_items[]=
-{
-    {"M1-P",     NULL, PARAM_FLOAT, 0,100,0.01},
-    {"M1-I",     NULL, PARAM_FLOAT, 0,50,0.01},
-    {"M1-D",     NULL, PARAM_FLOAT, 0,50,0.01},
-    {"M1-target", NULL, PARAM_FLOAT, -200,200,5},
-    {"M2-P",     NULL, PARAM_FLOAT, 0,100,0.01},
-    {"M2-I",     NULL, PARAM_FLOAT, 0,50,0.01},
-    {"M2-D",     NULL, PARAM_FLOAT, 0,50,0.01},
-    {"M2-target", NULL, PARAM_FLOAT, -200,200,5},
-};
-//观测数据菜单
-static MenuItem M_VAL_menu_items[] = {
-    {"M1-target", NULL, PARAM_FLOAT, -200,200,5},
-    {"M1-now",     NULL, PARAM_FLOAT, 0,0,0},
-    {"M1-PIDOUT",     NULL, PARAM_FLOAT, 0,0,0},
-    {"M1-ERR",     NULL, PARAM_FLOAT, 0,0,0},
-    {"M2-target", NULL, PARAM_FLOAT, -200,200,5},
-    {"M2-now",     NULL, PARAM_FLOAT, 0,0,0},
-    {"M2-PIDOUT",     NULL, PARAM_FLOAT, 0,0,0},
-    {"M2-ERR",     NULL, PARAM_FLOAT, 0,0,0},
-};
 //题目数据
 static MenuItem Problem_menu_items[] = {
-    {"x",NULL,PARAM_FLOAT,-2000,2000,10},
-    {"y",NULL,PARAM_FLOAT,-2000,2000,10},
-    {"number",NULL,PARAM_UINT16,0,6,1}
+    {"x",NULL,PARAM_FLOAT,0,0,0},
+    {"y",NULL,PARAM_FLOAT,0,0,0},
 };
 // 初始化：把外部实例的成员地址填进去，不使用全局变量！
-void Menu_Init(Menu* menu, void* motor1,void* motor2,void* question)
+void Menu_Init(Menu* menu, void* title)
 {
     OLED_Init(); // 初始化OLED显示屏
 
     menu->current_menu = 1;
-    Motor_Driver* m1 = (Motor_Driver*)motor1;
-    Motor_Driver* m2 = (Motor_Driver*)motor2;
-    question_Driver* q1 = (question_Driver*)question;
+    title_Driver* mytitle = (title_Driver*)title;
 
-    menu->items1 = M_VAR_menu_items;
-    menu->count1 = sizeof(M_VAR_menu_items)/sizeof(MenuItem);
-    menu->items2 = M_VAL_menu_items;
-    menu->count2 = sizeof(M_VAL_menu_items)/sizeof(MenuItem);
-    menu->items3 = Problem_menu_items;
-    menu->count3 = sizeof(Problem_menu_items)/sizeof(MenuItem);
+    menu->items1 = Problem_menu_items;
+    menu->count1 = sizeof(Problem_menu_items)/sizeof(MenuItem);
 
 
-    menu->items1[0].addr = &m1->var.Kp;
-    menu->items1[1].addr = &m1->var.Ki;
-    menu->items1[2].addr = &m1->var.Kd;
-    menu->items1[3].addr = &m1->var.target;
-    menu->items1[4].addr = &m2->var.Kp;
-    menu->items1[5].addr = &m2->var.Ki;
-    menu->items1[6].addr = &m2->var.Kd;
-    menu->items1[7].addr = &m2->var.target;
+    menu->items1[0].addr = &mytitle->x;
+    menu->items1[1].addr = &mytitle->y;
 
-    menu->items2[0].addr = &m1->var.target;
-    menu->items2[1].addr = &m1->var.now;
-    menu->items2[2].addr = &m1->var.out;
-    menu->items2[3].addr = &m1->var.error;
-    menu->items2[4].addr = &m2->var.target;
-    menu->items2[5].addr = &m2->var.now;
-    menu->items2[6].addr = &m2->var.out;
-    menu->items2[7].addr = &m2->var.error;
-    menu->items3[0].addr = &q1->x;
-    menu->items3[1].addr = &q1->y;
-    menu->items3[2].addr = &q1->num;
 
 }
 
@@ -96,17 +47,13 @@ void Menu_Switch(Menu* menu, uint8_t menu_num)
 // ===================== 获取当前菜单的内容 =====================
 static MenuItem* Menu_GetCurrentItems(Menu* menu)
 {
-    if(menu->current_menu == 1) return M_VAR_menu_items;
-    else if(menu->current_menu == 2) return M_VAL_menu_items;
-    else if(menu->current_menu == 3) return Problem_menu_items;
+   if(menu->current_menu == 1) return Problem_menu_items;
     return NULL;
 }
 
 static uint8_t Menu_GetCurrentCount(Menu* menu)
 {
-    if(menu->current_menu == 1) return sizeof(M_VAR_menu_items)/sizeof(MenuItem);
-    else if(menu->current_menu == 2) return sizeof(M_VAL_menu_items)/sizeof(MenuItem);
-    else if(menu->current_menu == 3) return sizeof(Problem_menu_items)/sizeof(MenuItem);
+   if(menu->current_menu == 1) return sizeof(Problem_menu_items)/sizeof(MenuItem);
     return 0;
 }
 
@@ -198,11 +145,11 @@ void Menu_Show(Menu* menu,uint8_t key)
         if(real_idx >= count) break;
         // 显示参数名称
         if(real_idx == menu_index)
-            OLED_ShowString(0, i*8, ">", OLED_6X8);
+            OLED_ShowString(0, i*16, ">", OLED_8X16);
         else
-            OLED_ShowString(0, i*8, " ", OLED_6X8);
+            OLED_ShowString(0, i*16, " ", OLED_8X16);
 
-        OLED_ShowString(8, i*8, items[real_idx].name, OLED_6X8);
+        OLED_ShowString(8, i*16, items[real_idx].name, OLED_8X16);
 
         // 获取当前参数值
         float val = Menu_GetCurrentValue(menu,real_idx);
@@ -213,10 +160,10 @@ void Menu_Show(Menu* menu,uint8_t key)
             int zs = (int)val;               // 整数 123
             int xs = (int)((val-zs)*1000);   // 小数 456
             if(xs<0) xs = -xs;
-            OLED_Printf(64, i*8, OLED_6X8, ": %d.%03d", zs, xs);
+            OLED_Printf(64, i*16, OLED_8X16, ": %d.%03d", zs, xs);
         }
         else
-            OLED_Printf(64, i*8, OLED_6X8, ": %d",(int)val);
+            OLED_Printf(64, i*16, OLED_8X16, ": %d",(int)val);
     }
     OLED_Update();
 }

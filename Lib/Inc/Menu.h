@@ -24,17 +24,13 @@ typedef struct {
 typedef struct {
     MenuItem*  items1;  // 参数列表
     uint8_t    count1;  // 参数数量
-    MenuItem*  items2;  // 参数列表
-    uint8_t    count2;  // 参数数量
-    MenuItem*  items3;  // 参数列表
-    uint8_t    count3;  // 参数数量
 
     // 当前使用哪个菜单 1或2
     uint8_t current_menu;
 } Menu;
 
 // 初始化菜单（把外部实例传进来，无全局变量）
-void Menu_Init(Menu* menu, void* motor1,void* motor2,void* question);
+void Menu_Init(Menu* menu,void* title);
 
 // 菜单操作
 float Menu_GetCurrentValue(Menu* menu,uint8_t index);

@@ -53,6 +53,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     SCSLib/Src/SCServo.c
     SCSLib/Src/uart.c
     SCSLib/Src/SMS_STS.c
+    Lib/Src/menu.c
+    Lib/Src/OLED.c
+    Lib/Src/OLED_Data.c
 )
 
 # Add include paths
