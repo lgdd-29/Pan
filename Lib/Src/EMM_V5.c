@@ -1,5 +1,5 @@
 #include "Emm_V5.h"
-#include "usart.h"
+#include "stm32f4xx.h"
 /**********************************************************
 ***	Emm_V5.0步进闭环控制例程
 ***	适配说明：
@@ -24,7 +24,7 @@ void Emm_V5_Reset_CurPos_To_Zero(StepMotor_Driver *driver)
   cmd[3] =  0x6B;                       // 校验字节
   
   // 发送命令（调用HAL库版usart_SendCmd）
-  usart_SendCmd(driver->setval.huart, cmd, 4);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 4, 50);
 }
 
 /**
@@ -43,7 +43,7 @@ void Emm_V5_Reset_Clog_Pro(StepMotor_Driver *driver)
   cmd[3] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 4);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 4,50);
 }
 
 /**
@@ -82,7 +82,7 @@ void Emm_V5_Read_Sys_Params(StepMotor_Driver *driver, SysParams_t s)
   cmd[i] = 0x6B; ++i;                   // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, i);
+  HAL_UART_Transmit(driver->setval.huart, cmd, i, 50);
 }
 
 /**
@@ -105,7 +105,7 @@ void Emm_V5_Modify_Ctrl_Mode(StepMotor_Driver *driver, bool svF, uint8_t ctrl_mo
   cmd[5] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 6);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 6,50);
 }
 
 /**
@@ -128,7 +128,7 @@ void Emm_V5_En_Control(StepMotor_Driver *driver, bool state, bool snF)
   cmd[5] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 6);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 6,50);
 }
 
 /**
@@ -155,7 +155,7 @@ void Emm_V5_Vel_Control(StepMotor_Driver *driver, uint8_t dir, uint16_t vel, uin
   cmd[7] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 8);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 8,50);
 }
 
 /**
@@ -189,7 +189,7 @@ void Emm_V5_Pos_Control(StepMotor_Driver *driver, uint8_t dir, uint16_t vel, uin
   cmd[12] =  0x6B;                      // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 13);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 13,50);
 }
 
 /**
@@ -210,7 +210,7 @@ void Emm_V5_Stop_Now(StepMotor_Driver *driver, bool snF)
   cmd[4] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 5);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 5,50);
 }
 
 /**
@@ -229,7 +229,7 @@ void Emm_V5_Synchronous_motion(StepMotor_Driver *driver)
   cmd[3] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 4);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 4,50);
 }
 
 /**
@@ -250,7 +250,7 @@ void Emm_V5_Origin_Set_O(StepMotor_Driver *driver, bool svF)
   cmd[4] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 5);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 5,50);
 }
 
 /**
@@ -294,7 +294,7 @@ void Emm_V5_Origin_Modify_Params(StepMotor_Driver *driver, bool svF, uint8_t o_m
   cmd[19] =  0x9B;                      // 校验字节（原代码0x6B，按实际协议调整）
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 20);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 20,50);
 }
 
 /**
@@ -316,7 +316,7 @@ void Emm_V5_Origin_Trigger_Return(StepMotor_Driver *driver, uint8_t o_mode, bool
   cmd[4] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 5);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 5,50);
 }
 
 /**
@@ -335,5 +335,5 @@ void Emm_V5_Origin_Interrupt(StepMotor_Driver *driver)
   cmd[3] =  0x6B;                       // 校验字节
   
   // 发送命令
-  usart_SendCmd(driver->setval.huart, cmd, 4);
+  HAL_UART_Transmit(driver->setval.huart, cmd, 4,50);
 }
