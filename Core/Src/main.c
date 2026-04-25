@@ -24,12 +24,25 @@
 #include "StepMotor.h"
 #include "Key.h"
 #include "Motor.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 StepMotor_Driver *StepMotor;
 Motor_Driver *PanMotor;
+title_Driver title={
+  .Data_receive=NULL,
+  .ready=0,
+  .RxState=0,
+  .pRxPacket=0,
+  .Serial_RxPacket=0,
+  .rx_byte=0,
+  .x=0.0f,
+  .y=0.0f
+};
+FloatConvert conv;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,7 +71,67 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_UART4_Init(void);
 /* USER CODE BEGIN PFP */
+//坐标数据
+void Data_0xB6(title_Driver *title)
+{
+  if(title->RxState==1)
+  {
+    title->Serial_RxPacket[title->pRxPacket++]=title->rx_byte;
+    if(title->pRxPacket>=8)
+    {
+      title->RxState=2;
+    }
+  }
+  else if(title->RxState==2)
+  {
+    if(title->rx_byte==0x6B)
+    {
+      conv.bytes[0]=title->Serial_RxPacket[3];
+      conv.bytes[1]=title->Serial_RxPacket[2];  
+      conv.bytes[2]=title->Serial_RxPacket[1];
+      conv.bytes[3]=title->Serial_RxPacket[0];
+      title->x=conv.f;
+      conv.bytes[0]=title->Serial_RxPacket[7];
+      conv.bytes[1]=title->Serial_RxPacket[6];
+      conv.bytes[2]=title->Serial_RxPacket[5];
+      conv.bytes[3]=title->Serial_RxPacket[4];
+      title->y=conv.f;
+    }
 
+    title->RxState = 0;
+    title->pRxPacket = 0;
+  }
+  else if(title->rx_byte==0xB6)
+  {
+    title->RxState=1;
+    title->pRxPacket=0;
+  }
+}
+
+//TODO Data_deal
+void Data_deal(title_Driver *title)
+{
+  if(title->RxState==0)
+  {
+    if(title->rx_byte==0xB6&&title->ready==0)
+    {
+      title->Data_receive=Data_0xB6;  //坐标
+      title->ready=1;  //表示视觉开始发送信息了。
+    }
+  }
+  if(title->ready==1) title->Data_receive(title);
+}
+
+
+//TODO 串口中断
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if(huart==&huart4)
+  {
+    Data_deal(&title);
+    HAL_UART_Receive_IT(&huart4, &title.rx_byte, 1);  // 只在USART2里重开
+  }
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -112,6 +185,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_UART_Receive_IT(&huart4, &title.rx_byte, 1);
+  uint8_t start_flag=0xFF;
+  while(title.ready==0) 
+  {
+    HAL_UART_Transmit(&huart4, &start_flag, 1, 20);
+    HAL_Delay(500);
+  }
   uint8_t keynum=0;
   int16_t stepnum=0;
   while (1)
