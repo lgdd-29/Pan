@@ -5,7 +5,7 @@
  * 作者:
  */
 
-#include "stm32g4xx.h"
+#include "stm32f4xx.h"
 #include "uart.h"
 
 uint32_t IOTimeOut = 5; // 通信超时

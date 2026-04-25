@@ -1,6 +1,6 @@
 #ifndef __MOTOR_H
 #define __MOTOR_H
-#include "stm32g4xx_hal.h"
+#include "stm32f4xx_hal.h"
 typedef struct Motor_Driver Motor_Driver;
 typedef struct Motor_FUN Motor_FUN;
 typedef struct Motor_VAR Motor_VAR;

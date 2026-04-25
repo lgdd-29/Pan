@@ -47,12 +47,19 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Lib/Src/EMM_V5.c
     Lib/Src/StepMotor.c
+    Lib/Src/Key.c
+    Lib/Src/Motor.c
+    SCSLib/Src/SCS.c
+    SCSLib/Src/SCServo.c
+    SCSLib/Src/uart.c
+    SCSLib/Src/SMS_STS.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Lib/Inc
+    SCSLib/Inc
 )
 
 # Add project symbols (macros)

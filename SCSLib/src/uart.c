@@ -6,8 +6,8 @@
  */
 
 #include <stdio.h>
-#include "stm32g4xx.h"                  // Device header
-#include "stm32g4xx_hal.h"			  // HAL header
+#include "stm32f4xx.h"                  // Device header
+#include "stm32f4xx_hal.h"			  // HAL header
 #include "uart.h"
 
 //UART 读数据缓冲区
@@ -36,7 +36,7 @@ int16_t Uart_Read(void)
 USART1作为舵机串口
 ------------------*/
 
-extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 
 #define UART_TX_TIMEOUT_MS 20U
 
@@ -52,7 +52,7 @@ void Uart_Send(uint8_t *buf , uint8_t len)
 		return;
 	}
 
-	HAL_UART_Transmit(&huart1, buf, len, UART_TX_TIMEOUT_MS);
+	HAL_UART_Transmit(&huart2, buf, len, UART_TX_TIMEOUT_MS);
 }
 
 
