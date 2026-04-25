@@ -52,6 +52,7 @@ struct title_Driver
   float x;
   float y;
 
+  uint8_t tim_flag;
   void (*Data_receive)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
 };
 /* USER CODE END ET */

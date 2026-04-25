@@ -24,7 +24,6 @@
 #include "StepMotor.h"
 #include "Key.h"
 #include "Motor.h"
-#include "menu.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
@@ -41,7 +40,8 @@ title_Driver title={
   .Serial_RxPacket=0,
   .rx_byte=0,
   .x=0.0f,
-  .y=0.0f
+  .y=0.0f,
+  .tim_flag=0
 };
 FloatConvert conv;
 /* USER CODE END PTD */
@@ -136,6 +136,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     HAL_UART_Receive_IT(&huart4, &title.rx_byte, 1);  // 只在USART2里重开
   }
 }
+
+//TODO 定时器中断
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM2) // 检查是否是TIM2的中断
+  {
+    title.tim_flag=1; // 置位定时器标志，主循环里会检测到并进行位置控制计算
+  }
+}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -197,6 +207,10 @@ int main(void)
     HAL_UART_Transmit(&huart4, &start_flag, 1, 20);
     HAL_Delay(500);
   }
+  HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
+
+
+
   uint8_t keynum=0;
   int16_t stepnum=0;
   while (1)
