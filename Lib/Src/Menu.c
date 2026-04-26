@@ -11,7 +11,10 @@ static int8_t menu_index = 0;  // 当前选中参数索引
 static int8_t start_line = 0;   // 菜单窗口起始行（新加！）
 
 //题目数据
-static MenuItem Problem_menu_items[] = {
+static MenuItem Title_test[] = {
+    {"number",NULL,PARAM_UINT16,0,5,1},
+    {"ready",NULL,PARAM_UINT16,0,0,0},
+    {"RxState",NULL,PARAM_UINT16,0,0,0},
     {"x",NULL,PARAM_FLOAT,0,0,0},
     {"y",NULL,PARAM_FLOAT,0,0,0},
 };
@@ -23,12 +26,14 @@ void Menu_Init(Menu* menu, void* title)
     menu->current_menu = 1;
     title_Driver* mytitle = (title_Driver*)title;
 
-    menu->items1 = Problem_menu_items;
-    menu->count1 = sizeof(Problem_menu_items)/sizeof(MenuItem);
+    menu->items1 = Title_test;
+    menu->count1 = sizeof(Title_test)/sizeof(MenuItem);
 
-
-    menu->items1[0].addr = &mytitle->x;
-    menu->items1[1].addr = &mytitle->y;
+    menu->items1[0].addr = &mytitle->number;
+    menu->items1[1].addr = &mytitle->ready;
+    menu->items1[2].addr = &mytitle->RxState;
+    menu->items1[3].addr = &mytitle->x;
+    menu->items1[4].addr = &mytitle->y;
 
 
 }
@@ -47,13 +52,13 @@ void Menu_Switch(Menu* menu, uint8_t menu_num)
 // ===================== 获取当前菜单的内容 =====================
 static MenuItem* Menu_GetCurrentItems(Menu* menu)
 {
-   if(menu->current_menu == 1) return Problem_menu_items;
+   if(menu->current_menu == 1) return Title_test;
     return NULL;
 }
 
 static uint8_t Menu_GetCurrentCount(Menu* menu)
 {
-   if(menu->current_menu == 1) return sizeof(Problem_menu_items)/sizeof(MenuItem);
+   if(menu->current_menu == 1) return sizeof(Title_test)/sizeof(MenuItem);
     return 0;
 }
 

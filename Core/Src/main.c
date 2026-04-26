@@ -47,9 +47,13 @@ title_Driver title={
   .rx_byte=0,
   .x=0.0f,
   .y=0.0f,
-  .tim_flag=0
+  .tim_flag=0,
+  .number=0,
+  .Start_Flag={0xA5,0xFF,0x5A}
 };
 FloatConvert conv;
+
+uint8_t keynum=0;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -199,10 +203,17 @@ int main(void)
   StepMotor->fun->Init(StepMotor);
   StepMotor->fun->Stop(StepMotor); // 初始化时先停止电机，确保安全
   PanMotor->fun->Motor_Init(PanMotor);
-  PanMotor->fun->Motor_Move(PanMotor,0);
+  PanMotor->fun->Motor_Move(PanMotor,0); // 初始化时先将PanMotor移动到中位位置，确保安全
+
+  //菜单初始化
   Menu_Init(menu, &title); // 初始化菜单，传入title实例地址以供菜单访问和修改
+  Menu_Switch(menu,1);
+
+  //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_On();
+  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态
+
+
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
   KEY_Driver key[3] = {     
     Key_Create(GPIOD, GPIO_PIN_8),
@@ -213,18 +224,39 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  //打开串口中断，准备接收数据
   HAL_UART_Receive_IT(&huart4, &title.rx_byte, 1);
-  uint8_t start_flag=0xFF;
-  while(title.ready==0) 
+
+
+  //发送0xFF，等待视觉那边准备好接收数据
+  OLED_Clear();
+  OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
+  OLED_Update();
+  while(title.rx_byte!=01) 
   {
-    HAL_UART_Transmit(&huart4, &start_flag, 1, 20);
+    HAL_UART_Transmit(&huart4, title.Start_Flag, 3, 20);
     HAL_Delay(500);
   }
+
+  //发送题目
+  while(title.ready==0)
+  {
+    keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
+    if(keynum==5)
+    {
+      title.Start_Flag[1]=title.number;
+      HAL_UART_Transmit(&huart4,title.Start_Flag,3,20);
+    }
+    Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
+  }
+
+
+  //打开定时器正式开始工作
   HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
 
 
 
-  uint8_t keynum=0;
+
   while (1)
   {
     /* USER CODE END WHILE */
@@ -240,12 +272,8 @@ int main(void)
       StepMotor->fun->Move(StepMotor,StepMotor->var.pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
     }
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
-    //keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
-    //Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
-    OLED_Clear();
-    OLED_ShowNum(0, 8, (uint16_t)(title.x), 3, OLED_8X16);
-    OLED_ShowNum(0, 16, (uint16_t)(title.y), 3, OLED_8X16);
-    OLED_Update(); // 刷新OLED显示
+    keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
+    Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
   }
   /* USER CODE END 3 */
 }

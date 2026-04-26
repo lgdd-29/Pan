@@ -43,16 +43,19 @@ typedef union {
 } FloatConvert;
 struct title_Driver
 {
+  uint8_t Start_Flag[3]; // 启动标志，包含3个按键的状态
   uint8_t RxState; // 接收状态：0-等待0xA5，1-接收数据，2-接收完成
   uint8_t pRxPacket; // 接收数据包的索引
+  uint8_t rx_byte;  //接收的字节
+  uint8_t Serial_RxPacket[8]; // 接收存储数据包
   uint8_t Serial_RxFlag;  // 接收完成标志
-  uint8_t rx_byte;
   uint8_t ready;  //视觉那边已经准备好了
-  uint8_t Serial_RxPacket[8]; // 接收数据包
+  uint8_t number; //题目编号
+
   float x;
   float y;
 
-  uint8_t tim_flag;
+  uint8_t tim_flag;  //定时器标志
   void (*Data_receive)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
 };
 /* USER CODE END ET */
