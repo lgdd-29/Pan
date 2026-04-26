@@ -5,9 +5,9 @@
 #include <stdlib.h>
 void PanMotor_Init(Motor_Driver *motor)
 {
-    motor->var.Kp = 0.01f; // 根据需要调整PID参数
+    motor->var.Kp = 0.13f; // 根据需要调整PID参数
     motor->var.Ki = 0.0f;
-    motor->var.Kd = 0.0f;
+    motor->var.Kd = 0.1f;
     motor->var.now = 0.0f;
     motor->var.integral = 0.0f;
     motor->var.last_error = 0.0f;
@@ -25,7 +25,7 @@ void PanMotor_Move(Motor_Driver *motor, float target)
     } else if (target < motor->var.Move_min) {
         target = motor->var.Move_min;
     }
-    WritePosEx(motor->per.Motor_ID, (int16_t)target+motor->var.middle_pos, 5, 0);
+    WritePosEx(motor->per.Motor_ID, (int16_t)target+motor->var.middle_pos, 90, 30);
 }
 
 // 读取当前位置指令

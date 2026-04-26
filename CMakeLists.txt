@@ -56,6 +56,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Lib/Src/menu.c
     Lib/Src/OLED.c
     Lib/Src/OLED_Data.c
+    Lib/Src/Laser.c
 )
 
 # Add include paths

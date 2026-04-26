@@ -21,10 +21,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "Laser.h"
+#include "OLED.h"
 #include "StepMotor.h"
 #include "Key.h"
 #include "Motor.h"
 #include "menu.h"
+#include "laser.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
@@ -166,6 +169,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   StepMotor=StepMotor_Create(&huart1,0x01);
   PanMotor=Motor_Create(0x01,1000,0,400);
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -193,8 +197,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   /*初始化所有已配置的外围设备*/
   StepMotor->fun->Init(StepMotor);
+  StepMotor->fun->Stop(StepMotor); // 初始化时先停止电机，确保安全
   PanMotor->fun->Motor_Init(PanMotor);
+  PanMotor->fun->Motor_Move(PanMotor,0);
   Menu_Init(menu, &title); // 初始化菜单，传入title实例地址以供菜单访问和修改
+  Laser_Init();  // 初始化激光模块，默认关闭激光
+  Laser_On();
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
   KEY_Driver key[3] = {     
     Key_Create(GPIOD, GPIO_PIN_8),
@@ -232,8 +240,12 @@ int main(void)
       StepMotor->fun->Move(StepMotor,StepMotor->var.pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
     }
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
-    keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
-    Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
+    //keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
+    //Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
+    OLED_Clear();
+    OLED_ShowNum(0, 8, (uint16_t)(title.x), 3, OLED_8X16);
+    OLED_ShowNum(0, 16, (uint16_t)(title.y), 3, OLED_8X16);
+    OLED_Update(); // 刷新OLED显示
   }
   /* USER CODE END 3 */
 }
@@ -445,6 +457,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PB14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB15 */
   GPIO_InitStruct.Pin = GPIO_PIN_15;

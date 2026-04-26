@@ -24,7 +24,7 @@ struct Step_PID{
 struct Motor_fun{
     void (*Set_Zero)(StepMotor_Driver *driver);
     void (*Init)(StepMotor_Driver *driver);
-    void (*Move)(StepMotor_Driver *driver,uint16_t val);
+    void (*Move)(StepMotor_Driver *driver, float val);
     void (*Stop)(StepMotor_Driver *driver);
     void (*PID_OUT)(StepMotor_Driver *driver,float target,float now);
     void (*PID_SET)(StepMotor_Driver *driver,float Kp,float Ki,float Kd);

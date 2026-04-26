@@ -7,7 +7,7 @@ void Motor_Set_Zero(StepMotor_Driver *driver)
     Emm_V5_Origin_Set_O(driver, 1);
 }
 
-void Motor_Move(StepMotor_Driver *driver, uint16_t val)
+void Motor_Move(StepMotor_Driver *driver, float val)
 {
     if(val>=0)
     Emm_V5_Vel_Control(driver,1,val,0,0);
@@ -23,9 +23,9 @@ void Motor_Stop(StepMotor_Driver *driver)
 void Motor_Init(StepMotor_Driver *driver)
 {
     Emm_V5_En_Control(driver, 1, 0); // 使能电机，非同步模式
-    driver->var.pid.Kp = 0.01f; 
+    driver->var.pid.Kp = 0.18f; 
     driver->var.pid.Ki = 0;
-    driver->var.pid.Kd = 0;
+    driver->var.pid.Kd = 0.1;
     driver->var.pid.now = 0;
     driver->var.pid.target = 0;
     driver->var.pid.error = 0;

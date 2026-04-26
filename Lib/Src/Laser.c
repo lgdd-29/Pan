@@ -14,7 +14,7 @@ void Laser_Init(void)
  */
 void Laser_On(void)
 {
-    HAL_GPIO_WritePin(LASER_GPIO_Port, LASER_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
 }
 
 /**
@@ -22,7 +22,7 @@ void Laser_On(void)
  */
 void Laser_Off(void)
 {
-    HAL_GPIO_WritePin(LASER_GPIO_Port, LASER_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
 }
 
 /**
