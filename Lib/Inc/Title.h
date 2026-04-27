@@ -1,6 +1,7 @@
 #ifndef __Title_H
 #define __Title_H
 #include "stdint.h"
+#include "stdlib.h"
 typedef struct title_Driver title_Driver;
 typedef struct title_var title_var;
 typedef struct title_fun title_fun;
@@ -26,6 +27,7 @@ struct title_fun
 {
     void (*Init)(title_Driver *title); // 初始化函数指针
     void (*Data_receive)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
+    void (*Data_deal)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
 };
 
 struct title_xy
