@@ -2,7 +2,7 @@
 #include "OLED.h"     // 只在这里include，对外隐藏
 #include "stdio.h"    // sprintf
 #include "Motor.h"     // 只在这里include，对外隐藏
-#include "main.h"
+#include "Title.h"     // 只在这里include，对外隐藏
 
 #define PAGE_COUNT 1  //一共几页菜单
 
@@ -29,11 +29,11 @@ void Menu_Init(Menu* menu, void* title)
     menu->items1 = Title_test;
     menu->count1 = sizeof(Title_test)/sizeof(MenuItem);
 
-    menu->items1[0].addr = &mytitle->number;
-    menu->items1[1].addr = &mytitle->ready;
-    menu->items1[2].addr = &mytitle->x;
-    menu->items1[3].addr = &mytitle->y;
-    menu->items1[4].addr = &mytitle->RxState;
+    menu->items1[0].addr = &mytitle->var.number;
+    menu->items1[1].addr = &mytitle->var.ready;
+    menu->items1[2].addr = &mytitle->xy.x;
+    menu->items1[3].addr = &mytitle->xy.y;
+    menu->items1[4].addr = &mytitle->var.RxState;
 
 }
 

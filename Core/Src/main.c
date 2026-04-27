@@ -28,6 +28,7 @@
 #include "Motor.h"
 #include "menu.h"
 #include "laser.h"
+#include "Title.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
@@ -38,19 +39,7 @@ StepMotor_Driver *StepMotor;
 Motor_Driver *PanMotor;
 Menu menu_instance;
 Menu *menu = &menu_instance;
-title_Driver title={
-  .Data_receive=NULL,
-  .ready=0,
-  .RxState=0,
-  .pRxPacket=0,
-  .Serial_RxPacket=0,
-  .rx_byte=0,
-  .x=0.0f,
-  .y=0.0f,
-  .tim_flag=0,
-  .number=2,
-  .Start_Flag={0xA5,0xFF,0x5A}
-};
+title_Driver title;
 FloatConvert conv;
 
 uint8_t keynum=0;
@@ -88,52 +77,52 @@ static void MX_TIM2_Init(void);
 //坐标数据
 void Data_0xB6(title_Driver *title)
 {
-  if(title->RxState==1)
+  if(title->var.RxState==1)
   {
-    title->Serial_RxPacket[title->pRxPacket++]=title->rx_byte;
-    if(title->pRxPacket>=8)
+    title->var.Serial_RxPacket[title->var.pRxPacket++]=title->var.rx_byte;
+    if(title->var.pRxPacket>=8)
     {
-      title->RxState=2;
+      title->var.RxState=2;
     }
   }
-  else if(title->RxState==2)
+  else if(title->var.RxState==2)
   {
-    if(title->rx_byte==0x6B)
+    if(title->var.rx_byte==0x6B)
     {
-      conv.bytes[0]=title->Serial_RxPacket[0];
-      conv.bytes[1]=title->Serial_RxPacket[1];  
-      conv.bytes[2]=title->Serial_RxPacket[2];
-      conv.bytes[3]=title->Serial_RxPacket[3];
-      title->x=conv.f;
-      conv.bytes[0]=title->Serial_RxPacket[4];
-      conv.bytes[1]=title->Serial_RxPacket[5];
-      conv.bytes[2]=title->Serial_RxPacket[6];
-      conv.bytes[3]=title->Serial_RxPacket[7];
-      title->y=conv.f;
+      conv.bytes[0]=title->var.Serial_RxPacket[0];
+      conv.bytes[1]=title->var.Serial_RxPacket[1];  
+      conv.bytes[2]=title->var.Serial_RxPacket[2];
+      conv.bytes[3]=title->var.Serial_RxPacket[3];
+      title->xy.x=conv.f;
+      conv.bytes[0]=title->var.Serial_RxPacket[4];
+      conv.bytes[1]=title->var.Serial_RxPacket[5];
+      conv.bytes[2]=title->var.Serial_RxPacket[6];
+      conv.bytes[3]=title->var.Serial_RxPacket[7];
+      title->xy.y=conv.f;
     }
 
-    title->RxState = 0;
-    title->pRxPacket = 0;
+    title->var.RxState = 0;
+    title->var.pRxPacket = 0;
   }
-  else if(title->rx_byte==0xB6)
+  else if(title->var.rx_byte==0xB6)
   {
-    title->RxState=1;
-    title->pRxPacket=0;
+    title->var.RxState=1;
+    title->var.pRxPacket=0;
   }
 }
 
 //TODO Data_deal
 void Data_deal(title_Driver *title)
 {
-  if(title->RxState==0)
+  if(title->var.RxState==0)
   {
-    if(title->rx_byte==0xB6&&title->ready==0)
+    if(title->var.rx_byte==0xB6&&title->var.ready==0)
     {
-      title->Data_receive=Data_0xB6;  //坐标
-      title->ready=1;  //表示视觉开始发送信息了。
+      title->fun->Data_receive=Data_0xB6;  //坐标
+      title->var.ready=1;  //表示视觉开始发送信息了。
     }
   }
-  if(title->ready==1) title->Data_receive(title);
+  if(title->var.ready==1) title->fun->Data_receive(title);
 }
 
 
@@ -143,7 +132,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if(huart==&huart4)
   {
     Data_deal(&title);
-    HAL_UART_Receive_IT(&huart4, &title.rx_byte, 1);  // 只在USART2里重开
+    HAL_UART_Receive_IT(&huart4, &title.var.rx_byte, 1);  // 只在USART2里重开
   }
 }
 
@@ -152,7 +141,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Instance == TIM2) // 检查是否是TIM2的中断
   {
-    title.tim_flag=1; // 置位定时器标志，主循环里会检测到并进行位置控制计算
+    title.var.tim_flag=1; // 置位定时器标志，主循环里会检测到并进行位置控制计算
   }
 }
 
@@ -225,27 +214,27 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   //打开串口中断，准备接收数据
-  HAL_UART_Receive_IT(&huart4, &title.rx_byte, 1);
+  HAL_UART_Receive_IT(&huart4, &title.var.rx_byte, 1);
 
 
   //发送0xFF，等待视觉那边准备好接收数据
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
-  while(title.rx_byte!=01) 
+  while(title.var.rx_byte!=01) 
   {
-    HAL_UART_Transmit(&huart4, title.Start_Flag, 3, 20);
+    HAL_UART_Transmit(&huart4, title.var.Start_Flag, 3, 20);
     HAL_Delay(500);
   }
 
   //发送题目
-  while(title.ready==0)
+  while(title.var.ready==0)
   {
     keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
     if(keynum==5)
     {
-      title.Start_Flag[1]=title.number;
-      HAL_UART_Transmit(&huart4,title.Start_Flag,3,20);
+      title.var.Start_Flag[1]=title.var.number;
+      HAL_UART_Transmit(&huart4,title.var.Start_Flag,3,20);
     }
     Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
   }
@@ -263,11 +252,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     //TODO 这里是主循环的核心部分，主要负责处理按键输入和更新菜单显示
-    if(title.tim_flag==1)
+    if(title.var.tim_flag==1)
     {
-      title.tim_flag=0;
-      PanMotor->fun->MPID_OUT(PanMotor,title.y,0); // 进行位置控制计算，并更新PanMotor的输出
-      StepMotor->fun->PID_OUT(StepMotor,title.x,0); // 进行位置控制计算，并更新StepMotor的输出
+      title.var.tim_flag=0;
+      PanMotor->fun->MPID_OUT(PanMotor,title.xy.y,0); // 进行位置控制计算，并更新PanMotor的输出
+      StepMotor->fun->PID_OUT(StepMotor,title.xy.x,0); // 进行位置控制计算，并更新StepMotor的输出
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       StepMotor->fun->Move(StepMotor,StepMotor->var.pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
     }
