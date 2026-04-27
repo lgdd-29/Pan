@@ -48,7 +48,7 @@ title_Driver title={
   .x=0.0f,
   .y=0.0f,
   .tim_flag=0,
-  .number=0,
+  .number=2,
   .Start_Flag={0xA5,0xFF,0x5A}
 };
 FloatConvert conv;

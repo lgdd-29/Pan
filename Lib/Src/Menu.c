@@ -14,9 +14,9 @@ static int8_t start_line = 0;   // 菜单窗口起始行（新加！）
 static MenuItem Title_test[] = {
     {"number",NULL,PARAM_UINT16,0,5,1},
     {"ready",NULL,PARAM_UINT16,0,0,0},
-    {"RxState",NULL,PARAM_UINT16,0,0,0},
     {"x",NULL,PARAM_FLOAT,0,0,0},
     {"y",NULL,PARAM_FLOAT,0,0,0},
+    {"RxState",NULL,PARAM_UINT16,0,0,0},
 };
 // 初始化：把外部实例的成员地址填进去，不使用全局变量！
 void Menu_Init(Menu* menu, void* title)
@@ -31,10 +31,9 @@ void Menu_Init(Menu* menu, void* title)
 
     menu->items1[0].addr = &mytitle->number;
     menu->items1[1].addr = &mytitle->ready;
-    menu->items1[2].addr = &mytitle->RxState;
-    menu->items1[3].addr = &mytitle->x;
-    menu->items1[4].addr = &mytitle->y;
-
+    menu->items1[2].addr = &mytitle->x;
+    menu->items1[3].addr = &mytitle->y;
+    menu->items1[4].addr = &mytitle->RxState;
 
 }
 
@@ -134,12 +133,14 @@ void Menu_Show(Menu* menu,uint8_t key)
     MenuItem* items = Menu_GetCurrentItems(menu);
     uint8_t count = Menu_GetCurrentCount(menu);
 
-    if(menu_index >= count) menu_index = 0;
-    else if(menu_index < 0) menu_index = count - 1;
+    if(menu_index >= count) 
+        menu_index = 0;
+    else if(menu_index < 0) 
+        menu_index = count - 1;
 
 
-    if(menu_index >= start_line + 8)  
-    start_line = menu_index - 8 + 1;  
+    if(menu_index >= start_line + 4)  
+    start_line = menu_index - 4 + 1;  
     if(menu_index < start_line)
     start_line = menu_index;
 
