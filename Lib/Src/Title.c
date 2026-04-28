@@ -27,7 +27,7 @@ void Title_Init(title_Driver *title)
     title->xy.x=0;
     title->xy.y=0;
     title->xy.y_offset=0;
-    title->xy.h=100;
+    title->xy.h=70;
     title->xy.L=0;
     title->xy.mypitch=0;
 }

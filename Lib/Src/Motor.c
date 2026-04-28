@@ -5,7 +5,7 @@
 #include <stdlib.h>
 void PanMotor_Init(Motor_Driver *motor)
 {
-    motor->var.Kp = 0.05f; // 根据需要调整PID参数
+    motor->var.Kp = 0.02f; // 根据需要调整PID参数
     motor->var.Ki = 0;
     motor->var.Kd = 0;
     motor->var.now = 0.0f;
