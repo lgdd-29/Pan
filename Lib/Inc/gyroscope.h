@@ -18,5 +18,6 @@ typedef struct
 }GyroData_t;
 void gyroscope_Init(GyroData_t *pGyroData);
 void GetAttitudeData(void);
-
+float Gyro_YawPID(float target,float now,float Kp,float Ki,float Kd);
+float Gyro_PitchPID(float target,float now,float Kp,float Ki,float Kd);
 #endif

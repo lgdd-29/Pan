@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "Laser.h"
 #include "OLED.h"
+#include "REG.h"
 #include "StepMotor.h"
 #include "Key.h"
 #include "Motor.h"
@@ -30,9 +31,11 @@
 #include "laser.h"
 #include "Title.h"
 #include "gyroscope.h"
+#include "wit_c_sdk.h"
 
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
+#include <stdint.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,9 +46,10 @@ Menu menu_instance;
 Menu *menu = &menu_instance;
 title_Driver *title;
 FloatConvert conv;
-GyroData_t pGyroData;
+GyroData_t pGyroData={0};
 
 uint8_t keynum=0;
+uint8_t ch=0;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -91,6 +95,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     title->fun->Data_deal(title);
     HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART2里重开
   }
+  else if(huart==&huart4)
+  {
+    WitSerialDataIn(ch);
+    HAL_UART_Receive_IT(&huart4, &ch, 1);  
+  }
   
 }
 
@@ -120,7 +129,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   StepMotor=StepMotor_Create(&huart1,0x01);
   PanMotor=Motor_Create(0x01,1000,0,400);
-
+  title=Titile_Create();
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -148,6 +157,7 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   /*初始化所有已配置的外围设备*/
+  title->fun->Init(title); // 初始化题目驱动，传入title实例地址以供题目驱动访问和修改数据
   StepMotor->fun->Init(StepMotor);
   StepMotor->fun->Stop(StepMotor); // 初始化时先停止电机，确保安全
   PanMotor->fun->Motor_Init(PanMotor);
@@ -178,9 +188,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   //打开串口中断，准备接收数据
   HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);
-
+  HAL_UART_Receive_IT(&huart4, &ch, 1);  
 
   //发送0xFF，等待视觉那边准备好接收数据
+  /*
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
@@ -189,8 +200,10 @@ int main(void)
     HAL_UART_Transmit(&huart3, title->var.Start_Flag, 3, 20);
     HAL_Delay(500);
   }
+  */
 
   //发送题目
+  /*
   while(title->var.ready==0)
   {
     keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
@@ -201,14 +214,14 @@ int main(void)
     }
     Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
   }
+  */
 
 
   //打开定时器正式开始工作
   HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
 
 
-
-
+  float yaw_output;
   while (1)
   {
     /* USER CODE END WHILE */
@@ -218,14 +231,24 @@ int main(void)
     if(title->var.tim_flag==1)
     {
       title->var.tim_flag=0;
+
+      GetAttitudeData();
+      yaw_output = Gyro_YawPID(0, pGyroData.fAngle[2], 30.0f, 0.2, 0); // 计算偏航角的PID输出
+      PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0); // 进行位置控制计算，并更新PanMotor的输出
+
       PanMotor->fun->MPID_OUT(PanMotor,title->xy.y,0); // 进行位置控制计算，并更新PanMotor的输出
-      StepMotor->fun->PID_OUT(StepMotor,title->xy.x,0); // 进行位置控制计算，并更新StepMotor的输出
-      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
-      StepMotor->fun->Move(StepMotor,StepMotor->var.pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      StepMotor->fun->Move(StepMotor,-yaw_output); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
     }
+    OLED_Clear();
+    OLED_ShowFloatNum(0, 0, pGyroData.fAngle[0], 3, 3, OLED_8X16);
+    OLED_ShowFloatNum(0, 16, pGyroData.fAngle[1], 3, 3, OLED_8X16);
+    OLED_ShowFloatNum(0, 32, pGyroData.fAngle[2], 3, 3, OLED_8X16);
+    OLED_Update();
+    /*
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
     keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
     Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
+    */
   }
   /* USER CODE END 3 */
 }

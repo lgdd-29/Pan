@@ -32,8 +32,9 @@ struct title_fun
 
 struct title_xy
 {
-    float x_laser;
-    float y_laser;
+    float h;
+    float L;
+    float y_offset;
     float x;
     float y;
 };

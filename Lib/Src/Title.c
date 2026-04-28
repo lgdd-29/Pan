@@ -20,6 +20,11 @@ void Title_Init(title_Driver *title)
     title->var.Start_Flag[0]=0xA5;
     title->var.Start_Flag[1]=0;
     title->var.Start_Flag[2]=0x5A;
+    title->xy.x=0;
+    title->xy.y=0;
+    title->xy.y_offset=0;
+    title->xy.h=0;
+    title->xy.L=0;
 }
 
 void Data_0xB6(title_Driver *title)

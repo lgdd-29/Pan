@@ -22,8 +22,7 @@ void Motor_Stop(StepMotor_Driver *driver)
 
 void Motor_Init(StepMotor_Driver *driver)
 {
-    Emm_V5_En_Control(driver, 1, 0); // 使能电机，非同步模式
-    driver->var.pid.Kp = 0.18f; 
+    driver->var.pid.Kp = 0.5f; 
     driver->var.pid.Ki = 0;
     driver->var.pid.Kd = 0.1;
     driver->var.pid.now = 0;
