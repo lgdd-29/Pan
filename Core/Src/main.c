@@ -92,7 +92,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   if(huart==&huart3)
   {
-    title->fun->Data_deal(title);
+    title->fun->Data_receive(title);
     HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART2里重开
   }
   else if(huart==&huart4)
@@ -191,16 +191,17 @@ int main(void)
   HAL_UART_Receive_IT(&huart4, &ch, 1);  
 
   //发送0xFF，等待视觉那边准备好接收数据
-  /*
+  
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
-  while(title->var.rx_byte!=01) 
+  uint8_t ready_signal = 0xFF;
+  while(title->var.ready==0) 
   {
-    HAL_UART_Transmit(&huart3, title->var.Start_Flag, 3, 20);
+    HAL_UART_Transmit(&huart3, &ready_signal, 1, 20);
     HAL_Delay(500);
   }
-  */
+  
 
   //发送题目
   /*
@@ -233,11 +234,21 @@ int main(void)
       title->var.tim_flag=0;
 
       GetAttitudeData();
-      yaw_output = Gyro_YawPID(0, pGyroData.fAngle[2], 30.0f, 0.2, 0); // 计算偏航角的PID输出
-      PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0); // 进行位置控制计算，并更新PanMotor的输出
+      title->xy.mypitch=pGyroData.fAngle[0];
+      //yaw_output = Gyro_YawPID(title->xy.x, pGyroData.fAngle[2], 30.0f, 0.2, 0); // 计算偏航角的PID输出
+      PanMotor->fun->MPID_OUT(PanMotor,title->xy.y_offset,0); // 进行位置控制计算，并更新PanMotor的输出
 
-      PanMotor->fun->MPID_OUT(PanMotor,title->xy.y,0); // 进行位置控制计算，并更新PanMotor的输出
-      StepMotor->fun->Move(StepMotor,-yaw_output); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
+      //StepMotor->fun->Move(StepMotor,-yaw_output); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+
+      
+
+      /*测试用*/
+      /*
+      PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0);
+      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
+      */
+
     }
     OLED_Clear();
     OLED_ShowFloatNum(0, 0, pGyroData.fAngle[0], 3, 3, OLED_8X16);

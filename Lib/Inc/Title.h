@@ -37,6 +37,7 @@ struct title_xy
     float y_offset;
     float x;
     float y;
+    float mypitch;
 };
 struct title_Driver
 {
