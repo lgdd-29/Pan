@@ -29,6 +29,8 @@
 #include "menu.h"
 #include "laser.h"
 #include "Title.h"
+#include "gyroscope.h"
+
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
 /* USER CODE END Includes */
@@ -41,6 +43,7 @@ Menu menu_instance;
 Menu *menu = &menu_instance;
 title_Driver *title;
 FloatConvert conv;
+GyroData_t pGyroData;
 
 uint8_t keynum=0;
 /* USER CODE END PTD */
@@ -61,6 +64,7 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 
@@ -73,6 +77,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 //坐标数据
 
@@ -81,11 +86,12 @@ static void MX_TIM2_Init(void);
 //TODO 串口中断
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if(huart==&huart4)
+  if(huart==&huart3)
   {
     title->fun->Data_deal(title);
-    HAL_UART_Receive_IT(&huart4, &title->var.rx_byte, 1);  // 只在USART2里重开
+    HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART2里重开
   }
+  
 }
 
 //TODO 定时器中断
@@ -139,12 +145,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_UART4_Init();
   MX_TIM2_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   /*初始化所有已配置的外围设备*/
   StepMotor->fun->Init(StepMotor);
   StepMotor->fun->Stop(StepMotor); // 初始化时先停止电机，确保安全
   PanMotor->fun->Motor_Init(PanMotor);
   PanMotor->fun->Motor_Move(PanMotor,0); // 初始化时先将PanMotor移动到中位位置，确保安全
+
+
+  gyroscope_Init(&pGyroData); // 初始化陀螺仪，传入pGyroData实例地址以供陀螺仪模块访问和更新数据  
+
 
   //菜单初始化
   Menu_Init(menu, &title); // 初始化菜单，传入title实例地址以供菜单访问和修改
@@ -166,7 +177,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   //打开串口中断，准备接收数据
-  HAL_UART_Receive_IT(&huart4, &title->var.rx_byte, 1);
+  HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);
 
 
   //发送0xFF，等待视觉那边准备好接收数据
@@ -175,7 +186,7 @@ int main(void)
   OLED_Update();
   while(title->var.rx_byte!=01) 
   {
-    HAL_UART_Transmit(&huart4, title->var.Start_Flag, 3, 20);
+    HAL_UART_Transmit(&huart3, title->var.Start_Flag, 3, 20);
     HAL_Delay(500);
   }
 
@@ -186,7 +197,7 @@ int main(void)
     if(keynum==5)
     {
       title->var.Start_Flag[1]=title->var.number;
-      HAL_UART_Transmit(&huart4,title->var.Start_Flag,3,20);
+      HAL_UART_Transmit(&huart3,title->var.Start_Flag,3,20);
     }
     Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
   }
@@ -406,6 +417,39 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
 
 }
 

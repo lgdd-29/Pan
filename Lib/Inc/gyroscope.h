@@ -2,8 +2,13 @@
 #define __GYROSCOPE_H
 
 #include "stm32F4xx_hal.h"
-#include "sys.h"
 
+/*陀螺仪*/
+#define ACC_UPDATE   0x01  //加速度计更新标志
+#define GYRO_UPDATE  0x02  //陀螺仪更新标志
+#define ANGLE_UPDATE 0x04  //角度更新标志
+#define MAG_UPDATE   0x08  //磁力计更新标志
+#define READ_UPDATE  0x80  //读取更新标志
 
 typedef struct 
 {

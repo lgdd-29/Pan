@@ -58,6 +58,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Lib/Src/OLED_Data.c
     Lib/Src/Laser.c
     Lib/Src/Title.c
+    Lib/Src/gyroscope.c
+    Lib/Src/uart4.c
+    Lib/Src/wit_c_sdk.c
 )
 
 # Add include paths

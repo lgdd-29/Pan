@@ -1,5 +1,6 @@
 #include "gyroscope.h"
-
+#include "wit_c_sdk.h"
+#include "uart4.h"
 extern UART_HandleTypeDef huart4;
 
 static volatile char s_cDataUpdate = 0;
