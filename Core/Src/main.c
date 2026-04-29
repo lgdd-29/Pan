@@ -182,7 +182,7 @@ int main(void)
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
-  KEY_Driver key[3] = {     
+  KEY_Driver *key[3] = {     
     Key_Create(GPIOD, GPIO_PIN_8),
     Key_Create(GPIOB, GPIO_PIN_15),
     Key_Create(GPIOD, GPIO_PIN_10)
@@ -263,7 +263,7 @@ int main(void)
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
       
-      
+
       /*测试用*/
       /*
       PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0);
@@ -278,8 +278,8 @@ int main(void)
     OLED_Update();
     /*
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
-    keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
-    Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
+    Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
+    Menu_Show(menu,key->num); // 根据按键编号更新菜单显示
     */
   }
   /* USER CODE END 3 */
