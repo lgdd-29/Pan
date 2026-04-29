@@ -178,7 +178,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
+  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
@@ -226,11 +226,12 @@ int main(void)
   //打开定时器正式开始工作
   HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
 
-  //TODO 初始PID参数设置
-  title->fun->X_PIDSET(title,1,0,0); // 设置坐标环PID参数，后续可以根据需要调整
-  pGyroData->fun->PID_SET(&pGyroData->pid,1,0,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
-  PanMotor->fun->PID_SET(PanMotor,0.02,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
+  //TODO 初始PID参数设置
+  title->fun->X_PIDSET(title,0,0,0); // 设置坐标环PID参数，后续可以根据需要调整
+  pGyroData->fun->PID_SET(&pGyroData->pid,8.0,0.02,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
+
+  PanMotor->fun->PID_SET(PanMotor,0,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
   while (1)
   {
     /* USER CODE END WHILE */
@@ -425,7 +426,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
+  huart1.Init.BaudRate = 256000;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
