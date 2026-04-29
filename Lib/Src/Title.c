@@ -21,6 +21,10 @@ void Title_Init(title_Driver *title)
     title->var.Serial_RxPacket[5]=0;
     title->var.Serial_RxPacket[6]=0;
     title->var.Serial_RxPacket[7]=0;
+    title->var.Serial_RxPacket[8]=0;
+    title->var.Serial_RxPacket[9]=0;
+    title->var.Serial_RxPacket[10]=0;
+    title->var.Serial_RxPacket[11]=0;
     title->var.Start_Flag[0]=0xA5;
     title->var.Start_Flag[1]=0;
     title->var.Start_Flag[2]=0x5A;
@@ -29,6 +33,7 @@ void Title_Init(title_Driver *title)
     title->xy.y_offset=0;
     title->xy.h=70;
     title->xy.L=0;
+    title->xy.k=0;
     title->xy.mypitch=0;
     title->xy.myyaw=0;
 }
@@ -72,7 +77,7 @@ void Data_0xB6(title_Driver *title)
   if(title->var.RxState==1)
   {
     title->var.Serial_RxPacket[title->var.pRxPacket++]=title->var.rx_byte;
-    if(title->var.pRxPacket>=8)
+    if(title->var.pRxPacket>=12)
     {
       title->var.RxState=2;
     }
@@ -91,6 +96,11 @@ void Data_0xB6(title_Driver *title)
       conv.bytes[2]=title->var.Serial_RxPacket[6];
       conv.bytes[3]=title->var.Serial_RxPacket[7];
       title->xy.y=240-conv.f;
+      conv.bytes[0]=title->var.Serial_RxPacket[8];
+      conv.bytes[1]=title->var.Serial_RxPacket[9];
+      conv.bytes[2]=title->var.Serial_RxPacket[10];
+      conv.bytes[3]=title->var.Serial_RxPacket[11];
+      title->xy.k=conv.f;
       Laser_offset(title);
     }
 

@@ -8,7 +8,7 @@ typedef struct title_fun title_fun;
 typedef struct title_xy title_xy;
 typedef struct title_PID title_PID;
 typedef union {
-    uint8_t bytes[8];
+    uint8_t bytes[12];
     float f;
 } FloatConvert;
 struct title_var
@@ -17,7 +17,7 @@ struct title_var
   uint8_t RxState; // 接收状态：0-等待0xA5，1-接收数据，2-接收完成
   uint8_t pRxPacket; // 接收数据包的索引
   uint8_t rx_byte;  //接收的字节
-  uint8_t Serial_RxPacket[8]; // 接收存储数据包
+  uint8_t Serial_RxPacket[12]; // 接收存储数据包
   uint8_t Serial_RxFlag;  // 接收完成标志
   uint8_t ready;  //视觉那边已经准备好了
   uint8_t number; //题目编号
@@ -56,6 +56,7 @@ struct title_xy
     float y;
     float mypitch;
     float myyaw;
+    float k;
 };
 struct title_Driver
 {
