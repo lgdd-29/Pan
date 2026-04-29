@@ -41,6 +41,7 @@ void PanMotor_PID_SET(Motor_Driver *motor,float Kp,float Ki,float Kd)
     motor->var.Kp = Kp;
     motor->var.Ki = Ki;
     motor->var.Kd = Kd;
+    if(motor->var.Ki!=0) motor->var.max_integral=10/Ki; // 根据Ki参数动态调整积分限幅，防止积分过大导致系统不稳定
 }
 
 void PanMPID_OUT(Motor_Driver *motor,float target,float now)
@@ -49,7 +50,6 @@ void PanMPID_OUT(Motor_Driver *motor,float target,float now)
     motor->var.target=target;
     motor->var.error = motor->var.target - motor->var.now;
     motor->var.integral += motor->var.error;
-    if(motor->var.Ki!=0) motor->var.max_integral=10/motor->var.Ki; // 根据Ki参数动态调整积分限幅，防止积分过大导致系统不稳定
     if(motor->var.integral > motor->var.max_integral) motor->var.integral = motor->var.max_integral; // 积分限幅
     else if(motor->var.integral < -motor->var.max_integral) motor->var.integral = -motor->var.max_integral;
     float derivative = motor->var.error - motor->var.last_error;

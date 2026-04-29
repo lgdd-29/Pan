@@ -263,6 +263,7 @@ int main(void)
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
       
+      
       /*测试用*/
       /*
       PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0);
