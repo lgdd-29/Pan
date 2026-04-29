@@ -297,6 +297,70 @@ void Emm_V5_Origin_Modify_Params(StepMotor_Driver *driver, bool svF, uint8_t o_m
   HAL_UART_Transmit(driver->setval.huart, cmd, 20,50);
 }
 
+// 辅助计算CRC16函数
+static uint16_t EMM_V5_CRC16(uint8_t *data, uint16_t length)
+{
+  uint16_t crc = 0xFFFF;
+  for (uint16_t i = 0; i < length; i++) {
+    crc ^= data[i];
+    for (uint8_t j = 0; j < 8; j++) {
+      if (crc & 1) crc = (crc >> 1) ^ 0xA001;
+      else crc >>= 1;
+    }
+  }
+  return crc;
+}
+
+/**
+  * @brief    修改PID参数
+  * @param    driver : 电机驱动结构体指针
+  * @param    svF    : 是否存储标志（0-不存储 1-存储）
+  * @param    Kp     : 比例项 (32位)
+  * @param    Ki     : 积分项 (32位)
+  * @param    Kd     : 微分项 (32位)
+  * @retval   无
+  */
+void EMM_V5_PIDSET(StepMotor_Driver *driver, bool svF, uint32_t Kp, uint32_t Ki, uint32_t Kd)
+{
+  uint8_t cmd[23] = {0};
+  
+  cmd[0] = driver->setval.adder; // 从机地址
+  cmd[1] = 0x10;                 // 功能码
+  cmd[2] = 0x00;                 // 寄存器地址 Hi
+  cmd[3] = 0x4A;                 // 寄存器地址 Lo
+  cmd[4] = 0x00;                 // 寄存器数量 Hi
+  cmd[5] = 0x07;                 // 寄存器数量 Lo
+  cmd[6] = 0x0E;                 // 字节数 14
+  
+  cmd[7] = 0xC3;                 // 寄存器1 Hi (固定值)
+  cmd[8] = svF ? 0x01 : 0x00;    // 寄存器1 Lo (是否存储)
+  
+  cmd[9]  = (uint8_t)(Kp >> 24); // 寄存器2 Hi
+  cmd[10] = (uint8_t)(Kp >> 16); // 寄存器2 Lo
+  cmd[11] = (uint8_t)(Kp >> 8);  // 寄存器3 Hi
+  cmd[12] = (uint8_t)(Kp & 0xFF);// 寄存器3 Lo
+  
+  cmd[13] = (uint8_t)(Ki >> 24); // 寄存器4 Hi
+  cmd[14] = (uint8_t)(Ki >> 16); // 寄存器4 Lo
+  cmd[15] = (uint8_t)(Ki >> 8);  // 寄存器5 Hi
+  cmd[16] = (uint8_t)(Ki & 0xFF);// 寄存器5 Lo
+  
+  cmd[17] = (uint8_t)(Kd >> 24); // 寄存器6 Hi
+  cmd[18] = (uint8_t)(Kd >> 16); // 寄存器6 Lo
+  cmd[19] = (uint8_t)(Kd >> 8);  // 寄存器7 Hi
+  cmd[20] = (uint8_t)(Kd & 0xFF);// 寄存器7 Lo
+  
+  // 计算前21个字节的CRC16 (Modbus RTU: CRC Low first, then CRC High)
+  uint16_t crc = EMM_V5_CRC16(cmd, 21);
+  // 注意图中画的是Hi先Lo后还是反过来，我们先按标准Modbus规约低位在前高位在后
+  // 或者你也可以看厂家手册具体怎么要求，这里采用常见Modbus CRC低位在前
+  cmd[21] = (crc >> 8) & 0xFF;   // 先发 CRC16 Hi
+  cmd[22] = (crc >> 8) & 0xFF;   // CRC16 Hi (或者是按照协议这里为CRC高字节)
+
+  
+  HAL_UART_Transmit(driver->setval.huart, cmd, 23, 100);
+}
+
 /**
   * @brief    触发回零
   * @param    addr   ：电机地址

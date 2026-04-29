@@ -22,50 +22,13 @@ void Motor_Stop(StepMotor_Driver *driver)
 
 void Motor_Init(StepMotor_Driver *driver)
 {
-    driver->var.pid.Kp = 0.5f; 
-    driver->var.pid.Ki = 0;
-    driver->var.pid.Kd = 0.1;
-    driver->var.pid.now = 0;
-    driver->var.pid.target = 0;
-    driver->var.pid.error = 0;
-    driver->var.pid.err_prev=0.0f;
-    driver->var.pid.last_error = 0.0f;
-    driver->var.pid.integral = 0.0f;
-    driver->var.pid.out = 0.0f;    
     driver->var.Move_max=200.0f; // 根据实际情况设置最大移动范围
 }
 
-void Step_PIDOUT(StepMotor_Driver *driver,float target,float now)
-{
-    driver->var.pid.target = target;
-    driver->var.pid.now = now;
-    driver->var.pid.error = driver->var.pid.target - driver->var.pid.now; 
-    if(driver->var.pid.error > 180)  // 处理循环角：误差超过180°时，取最短路径
-        driver->var.pid.error -= 360;
-    else if(driver->var.pid.error < -180) // 处理循环角：误差小于-180°时，取最短路径
-        driver->var.pid.error += 360;
-    
-    // 增量式公式（无累计，只算变化量）
-    float increment =  driver->var.pid.Kp*(driver->var.pid.error - driver->var.pid.last_error) 
-                    + driver->var.pid.Ki*driver->var.pid.error 
-                    + driver->var.pid.Kd*(driver->var.pid.error - 2*driver->var.pid.last_error +driver->var.pid.err_prev);
-    
-    driver->var.pid.out += increment;  // 输出 = 上一次输出 + 增量（平滑调速）
-    if(driver->var.pid.out > driver->var.Move_max) {
-        driver->var.pid.out = driver->var.Move_max;
-    } else if (driver->var.pid.out < -driver->var.Move_max) {
-        driver->var.pid.out = -driver->var.Move_max;
-    }
-    // 误差更新
-    driver->var.pid.err_prev = driver->var.pid.last_error;
-    driver->var.pid.last_error = driver->var.pid.error;
-}
 
 void Step_PID_SET(StepMotor_Driver *driver,float Kp,float Ki,float Kd)
 {
-    driver->var.pid.Kp = Kp;
-    driver->var.pid.Ki = Ki;
-    driver->var.pid.Kd = Kd;
+    EMM_V5_PIDSET(driver, 0, (uint32_t)(Kp*1000), (uint32_t)(Ki*1000), (uint32_t)(Kd*1000));
 }
 
 StepMotor_Driver* StepMotor_Create(UART_HandleTypeDef *huart,uint8_t adder)
@@ -81,7 +44,6 @@ StepMotor_Driver* StepMotor_Create(UART_HandleTypeDef *huart,uint8_t adder)
     driver->fun->Init=Motor_Init;
     driver->fun->Move=Motor_Move;
     driver->fun->Stop=Motor_Stop;
-    driver->fun->PID_OUT=Step_PIDOUT;
     driver->fun->PID_SET=Step_PID_SET;
     
 

@@ -47,5 +47,6 @@ void Emm_V5_Origin_Set_O(StepMotor_Driver *driver, bool svF);
 void Emm_V5_Origin_Modify_Params(StepMotor_Driver *driver, bool svF, uint8_t o_mode, uint8_t o_dir, uint16_t o_vel, uint32_t o_tm, uint16_t sl_vel, uint16_t sl_ma, uint16_t sl_ms, bool potF); 
 void Emm_V5_Origin_Trigger_Return(StepMotor_Driver *driver, uint8_t o_mode, bool snF);                                                                                                         
 void Emm_V5_Origin_Interrupt(StepMotor_Driver *driver);                                                                                                                                         
+void EMM_V5_PIDSET(StepMotor_Driver *driver, bool svF, uint32_t Kp, uint32_t Ki, uint32_t Kd);
 
 #endif
