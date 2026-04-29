@@ -50,6 +50,7 @@ struct title_fun
 struct title_xy
 {
     float h;
+    float h_var;
     float L;
     float y_offset;
     float x;

@@ -32,6 +32,7 @@ void Title_Init(title_Driver *title)
     title->xy.y=0;
     title->xy.y_offset=0;
     title->xy.h=70;
+    title->xy.h_var=0;
     title->xy.L=0;
     title->xy.k=0;
     title->xy.mypitch=0;
@@ -67,7 +68,7 @@ void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
 
 void Laser_offset(title_Driver *title)
 {
-  title->xy.L=title->xy.h/cos(title->xy.mypitch*PI/180.0f);
+  title->xy.L=(title->xy.h+title->xy.k*title->xy.h_var)/cos(title->xy.mypitch*PI/180.0f);
   title->xy.y_offset=title->xy.y-title->xy.L;
 }
 
