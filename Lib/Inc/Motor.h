@@ -12,6 +12,7 @@ struct Motor_FUN
     void (*Motor_Cali)(Motor_Driver *motor);
     int (*Motor_ReadMove)(Motor_Driver *motor);
     void (*MPID_OUT)(Motor_Driver *motor,float target,float now);
+    void (*PID_SET)(Motor_Driver *motor,float Kp,float Ki,float Kd);    
 };
 
 struct Motor_VAR

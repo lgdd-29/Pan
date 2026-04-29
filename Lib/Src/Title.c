@@ -30,61 +30,34 @@ void Title_Init(title_Driver *title)
     title->xy.h=70;
     title->xy.L=0;
     title->xy.mypitch=0;
+    title->xy.myyaw=0;
 }
 
-// 0~90度余弦值查表，放大10000倍
-// 对应公式: cos_table[i] = round(cos(i * PI / 180) * 10000)
-static const int16_t cos_table[91] = {
-    10000, 9998, 9993, 9986, 9975, 9961, 9945, 9925, 9902, 9876, 
-    9848, 9816, 9781, 9743, 9702, 9659, 9612, 9563, 9510, 9455, 
-    9396, 9335, 9271, 9205, 9135, 9063, 8987, 8910, 8829, 8746, 
-    8660, 8571, 8480, 8386, 8290, 8191, 8090, 7986, 7880, 7771, 
-    7660, 7547, 7431, 7313, 7193, 7071, 6946, 6819, 6691, 6560, 
-    6427, 6293, 6156, 6018, 5877, 5735, 5591, 5446, 5299, 5150, 
-    5000, 4848, 4694, 4539, 4383, 4226, 4067, 3907, 3746, 3583, 
-    3420, 3255, 3090, 2923, 2756, 2588, 2419, 2249, 2079, 1908, 
-    1736, 1564, 1391, 1218, 1045,  871,  697,  523,  348,  174, 
-       0
-};
-
-
-/**
- * @brief  快速余弦查表函数
- * @param  angle: 角度值，支持负数、大于360度的任意角度（如 -45, 0, 90, 370）
- * @retval 角度对应的余弦值（已放大10000倍）。如传入60，返回5000
- */
-int16_t Fast_Cos(int32_t angle)
+void DataX_PIDOUT(title_Driver *title)
 {
-    // 将角度限制在 0 ~ 359 之内
-    angle = angle % 360;
-    if (angle < 0) {
-        angle += 360;
-    }
+    if (title == NULL) return;
 
-    // 利用三角函数的象限对称性映射到 0 ~ 90 度
-    if (angle <= 90) {               // 第一象限: 0~90
-        return cos_table[angle];
-    } 
-    else if (angle <= 180) {         // 第二象限: 90~180
-        return -cos_table[180 - angle];
-    } 
-    else if (angle <= 270) {         // 第三象限: 180~270
-        return -cos_table[angle - 180];
-    } 
-    else {                           // 第四象限: 270~360
-        return cos_table[360 - angle];
-    }
+    title->pid.now=title->xy.x;  // 当前X坐标（从接收的数据更新）
+    // 1. 计算当前偏差 (目标值 - 当前值)
+    title->pid.error = 0 - title->pid.now;
+
+    // 2. 积分累加 (建议后续根据需要加入积分限幅防饱和)
+    title->pid.integral += title->pid.error;
+
+    // 3. 位置式 PID 计算：Out = Kp*e + Ki*Integral + Kd*(e - last_e)
+    title->pid.out = (title->pid.Kp * title->pid.error) + 
+                     (title->pid.Ki * title->pid.integral) + 
+                     (title->pid.Kd * (title->pid.error - title->pid.last_error));
+
+    // 4. 更新上次偏差，用于下次微分计算
+    title->pid.last_error = title->pid.error;
 }
 
-/**
- * @brief  快速正弦查表函数 (附加：有了余弦，正弦也可直接转换)
- * @param  angle: 角度值
- * @retval 角度对应的正弦值（已放大10000倍）。
- */
-int16_t Fast_Sin(int32_t angle)
+void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
 {
-    // sin(x) = cos(x - 90)
-    return Fast_Cos(angle - 90);
+    title->pid.Kp=Kp;
+    title->pid.Ki=Ki;
+    title->pid.Kd=Kd;
 }
 
 void Laser_offset(title_Driver *title)
@@ -93,6 +66,7 @@ void Laser_offset(title_Driver *title)
   title->xy.y_offset=title->xy.y-title->xy.L;
 }
 
+//TODO 获取坐标原始数据
 void Data_0xB6(title_Driver *title)
 {
   if(title->var.RxState==1)
@@ -130,6 +104,7 @@ void Data_0xB6(title_Driver *title)
   }
 }
 
+//TODO 判断枕头帧尾
 void Data_receive(title_Driver *title)
 {
     if(title->var.RxState==0)
@@ -153,8 +128,9 @@ title_Driver* Titile_Create(void)
         {
             title->fun->Init = Title_Init;
             title->fun->Data_receive = Data_receive;
+            title->fun->X_PIDOUT = DataX_PIDOUT;
+            title->fun->X_PIDSET = DataX_PIDSET;    
             title->fun->Data_deal = NULL; // 初始时没有数据处理函数，等接收到数据后根据题目类型再设置
-            title->fun->Init(title); // 初始化题目数据
         }
     }
     return title;

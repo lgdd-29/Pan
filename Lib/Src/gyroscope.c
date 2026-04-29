@@ -1,17 +1,64 @@
 #include "gyroscope.h"
 #include "wit_c_sdk.h"
 #include "uart4.h"
+#include "gyroscope.h"
+#include "stdlib.h"
 extern UART_HandleTypeDef huart4;
 
 static volatile char s_cDataUpdate = 0;
 const uint32_t c_uiBaud[10] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
 
-static void AutoScanSensor(void);
 static void SensorUartSend(uint8_t *p_data, uint32_t uiSize);
 static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum);
 static void Delayms(uint16_t ucMs);
 
 static GyroData_t *s_GyroData;
+
+void Gyro_YawPID(GyroData_t* GyroData,float target)
+{
+    GyroData->pid.now=GyroData->myyaw;  // 当前角度（从陀螺仪数据更新）
+    GyroData->pid.target+=target; // 目标角度（函数参数传入）
+    // ===================== 1. 360°循环角度误差计算（核心！）=====================
+    GyroData->pid.error = GyroData->pid.now-GyroData->pid.target; // 计算当前偏差 (目标值 - 当前值)
+    // 处理循环角：误差超过180°或小于-180°时，取最短路径
+    if(GyroData->pid.error > 180)
+        GyroData->pid.error -= 360;
+    else if(GyroData->pid.error < -180)
+        GyroData->pid.error += 360;
+
+    // ===================== 2. 积分项 + 积分限幅（防饱和）=====================
+    if (GyroData->pid.error < 30 && GyroData->pid.error > -30) 
+         GyroData->pid.integral += GyroData->pid.error;
+    // 积分限幅（根据你的电机/舵机调整大小，一般±100~±500）
+    if(GyroData->pid.integral > 200)  GyroData->pid.integral = 200;
+    else if(GyroData->pid.integral < -200) GyroData->pid.integral = -200;
+
+    // ===================== 3. 微分项（标准PID）=====================
+    GyroData->pid.differential = GyroData->pid.error - GyroData->pid.err_prev;
+    if (GyroData->pid.differential > 180) 
+        GyroData->pid.differential -= 360;
+    else if (GyroData->pid.differential < -180) 
+        GyroData->pid.differential += 360;
+    // ===================== 4. PID输出计算 =====================
+    GyroData->pid.out = GyroData->pid.Kp * GyroData->pid.error + GyroData->pid.Ki * GyroData->pid.integral + GyroData->pid.Kd * GyroData->pid.differential;
+
+    // ===================== 5. 输出限幅（防止电机超量程）=====================
+    if(GyroData->pid.out > 1000)  
+        GyroData->pid.out = 1000;
+    if(GyroData->pid.out < -1000) 
+        GyroData->pid.out = -1000;
+
+    // ===================== 6. 更新历史误差 =====================
+    GyroData->pid.err_prev = GyroData->pid.error;
+}
+
+void Gyro_PID_SET(GyroPID *pid,float Kp,float Ki,float Kd)
+{
+    pid->Kp = Kp;
+    pid->Ki = Ki;
+    pid->Kd = Kd;   
+}
+
 void gyroscope_Init(GyroData_t *pGyroData)
 {
     s_GyroData = pGyroData;
@@ -19,31 +66,24 @@ void gyroscope_Init(GyroData_t *pGyroData)
     WitSerialWriteRegister(SensorUartSend);
     WitRegisterCallBack(SensorDataUpdata);
     WitDelayMsRegister(Delayms);
-    // AutoScanSensor();
+    pGyroData->fun=(GyroFun *)malloc(sizeof(GyroFun));
+    pGyroData->fun->OUT=Gyro_YawPID;
+    pGyroData->fun->PID_SET=Gyro_PID_SET;
+
+    pGyroData->pid.Kp = 0.0f;  // 根据实际情况调整PID参数
+    pGyroData->pid.Ki = 0.0f;
+    pGyroData->pid.Kd = 0.0f;
+    pGyroData->pid.now = 0.0f;
+    pGyroData->pid.target = 0.0f;
+    pGyroData->pid.error = 0.0f;
+    pGyroData->pid.err_prev = 0.0f;
+    pGyroData->pid.integral = 0.0f;
+    pGyroData->pid.out = 0.0f;
+    pGyroData->pid.differential = 0.0f;
+    pGyroData->myyaw=0;
+    pGyroData->mypitch=0;
 }
 
-static void AutoScanSensor(void)
-{
-    int i, iRetry;
-
-    for (i = 1; i < 10; i++)
-    {
-        Usart4Init(c_uiBaud[i]);
-        iRetry = 2; 
-        do
-        {
-            s_cDataUpdate = 0;
-            WitReadReg(AX, 3);
-            HAL_Delay(100);
-            if (s_cDataUpdate != 0)
-            {
-                // printf("%d baud find sensor\r\n\r\n", c_uiBaud[i]);
-                return;
-            }
-            iRetry--;
-        } while (iRetry);
-    }
-}
 
 static void SensorUartSend(uint8_t *p_data, uint32_t uiSize)
 {
@@ -55,6 +95,7 @@ static void Delayms(uint16_t ucMs)
     HAL_Delay(ucMs);
 }
 
+// 数据更新标志位，使用位掩码表示不同类型的数据更新状态
 static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum)
 {
     int i;
@@ -100,6 +141,8 @@ void GetAttitudeData(void)
             s_GyroData->fAcc[i] = sReg[AX + i] / 32768.0f * 16.0f;
             s_GyroData->fGyro[i] = sReg[GX + i] / 32768.0f * 2000.0f;
             s_GyroData->fAngle[i] = sReg[Roll + i] / 32768.0f * 180.0f;
+            s_GyroData->myyaw=s_GyroData->fAngle[2];
+            s_GyroData->mypitch=s_GyroData->fAngle[0];
         }
         if (s_cDataUpdate & ACC_UPDATE)
         {
@@ -118,80 +161,4 @@ void GetAttitudeData(void)
             s_cDataUpdate &= ~MAG_UPDATE;
         }
     }
-}
-
-float Gyro_YawPID(float target, float now, float Kp, float Ki, float Kd)
-{
-    // 静态变量（保存历史值）
-    static float error_prev = 0.0f;  // 上一次误差
-    static float integral  = 0.0f;   // 积分累加值
-    
-    float error;        // 当前角度误差
-    float differential; // 微分项
-    float output;       // 最终输出
-
-    // ===================== 1. 360°循环角度误差计算（核心！）=====================
-    error = target - now;
-    // 处理循环角：误差超过180°或小于-180°时，取最短路径
-    if(error > 180)
-        error -= 360;
-    else if(error < -180)
-        error += 360;
-
-    // ===================== 2. 积分项 + 积分限幅（防饱和）=====================
-    integral += error;
-    // 积分限幅（根据你的电机/舵机调整大小，一般±100~±500）
-    if(integral > 200)  integral = 200;
-    if(integral < -200) integral = -200;
-
-    // ===================== 3. 微分项（标准PID）=====================
-    differential = error - error_prev;
-
-    // ===================== 4. PID输出计算 =====================
-    output = Kp * error + Ki * integral + Kd * differential;
-
-    // ===================== 5. 输出限幅（防止电机超量程）=====================
-    if(output > 1000)  
-        output = 1000;
-    if(output < -1000) 
-        output = -1000;
-
-    // ===================== 6. 更新历史误差 =====================
-    error_prev = error;
-
-    return output;
-}
-
-float Gyro_PitchPID(float target, float now, float Kp, float Ki, float Kd)
-{
-    // 静态变量：保存上一次误差 & 积分值
-    static float error_prev = 0.0f;
-    static float integral  = 0.0f;
-    
-    float error;        // 当前误差
-    float differential; // 微分项
-    float output;       // 输出
-
-    // 1. 计算误差（直接相减，因为是线性角度）
-    error = target - now;
-
-    // 2. 积分项 + 积分限幅（防止积分饱和）
-    integral += error;
-    if(integral > 150)  integral = 150;   // 积分上限（小角度可调小）
-    if(integral < -150) integral = -150;  // 积分下限
-
-    // 3. 微分项（标准PID，本次误差 - 上一次误差）
-    differential = error - error_prev;
-
-    // 4. 计算PID输出
-    output = Kp * error + Ki * integral + Kd * differential;
-
-    // 5. 输出限幅（保护舵机/电机，小角度不需要太大输出）
-    if(output > 200)  output = 200;
-    if(output < -200) output = -200;
-
-    // 6. 更新上一次误差
-    error_prev = error;
-
-    return output;
 }

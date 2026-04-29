@@ -74,7 +74,7 @@ static uint16_t __CRC16(uint8_t *puchMsg, uint16_t usDataLen)
     return (uint16_t)(((uint16_t)uchCRCHi << 8) | (uint16_t)uchCRCLo) ;
 }
 
-
+// 计算校验和的函数，输入数据和长度，返回校验和 (这里使用简单的累加和作为示例)
 static uint8_t __CaliSum(uint8_t *data, uint32_t len)
 {
     uint32_t i;
@@ -95,11 +95,11 @@ int32_t WitSerialWriteRegister(SerialWrite Write_func)
 static void CopeWitData(uint8_t ucIndex, uint16_t *p_data, uint32_t uiLen)
 {
     uint32_t uiReg1 = 0, uiReg2 = 0, uiReg1Len = 0, uiReg2Len = 0;
-    uint16_t *p_usReg1Val = p_data;
-    uint16_t *p_usReg2Val = p_data+3;
+    uint16_t *p_usReg1Val = p_data;   //指向接收到的数据的指针，p_data是一个指向16位数据的指针，表示接收到的数据数组的起始地址
+    uint16_t *p_usReg2Val = p_data+3;  //指向接收到的数据的指针，p_data是一个指向16位数据的指针，表示接收到的数据数组的起始地址，p_data+3表示从第4个16位数据开始的地址，即第7个字节开始的位置，因为每个16位数据占2个字节，所以偏移量是3*2=6字节，即从第7个字节开始读取数据
     
     uiReg1Len = 4;
-    switch(ucIndex)
+    switch(ucIndex)  // 根据接收到的数据的索引值，确定要更新的寄存器地址和长度，ucIndex是一个8位无符号整数，表示接收到的数据的索引值，根据这个索引值可以确定要更新的寄存器地址和长度，uiReg1和uiReg2分别表示要更新的两个寄存器的起始地址，uiReg1Len和uiReg2Len分别表示要更新的两个寄存器的长度（单位是16位寄存器数量），根据不同的索引值，可以更新不同的寄存器地址和长度
     {
         case WIT_ACC:   uiReg1 = AX;    uiReg1Len = 3;  uiReg2 = TEMP;  uiReg2Len = 1;  break;
         case WIT_ANGLE: uiReg1 = Roll;  uiReg1Len = 3;  uiReg2 = VERSION;  uiReg2Len = 1;  break;
@@ -116,20 +116,20 @@ static void CopeWitData(uint8_t ucIndex, uint16_t *p_data, uint32_t uiLen)
 		default:
 			return ;
     }
-    if(uiLen == 3)
+    if(uiLen == 3)  // 如果要更新的寄存器长度是3个16位寄存器（即6字节），则设置uiReg1Len为3，uiReg2Len为0，表示只更新第一个寄存器地址和长度，不更新第二个寄存器地址和长度
     {
         uiReg1Len = 3;
         uiReg2Len = 0;
     }
-    if(uiReg1Len)
+    if(uiReg1Len)  // 如果要更新的第一个寄存器长度不为0，则将接收到的数据复制到sReg数组中，并调用回调函数通知寄存器更新，传递起始寄存器地址和寄存器数量
 	  {
-		   memcpy(&sReg[uiReg1], p_usReg1Val, uiReg1Len<<1);
-		   p_WitRegUpdateCbFunc(uiReg1, uiReg1Len);
+		   memcpy(&sReg[uiReg1], p_usReg1Val, uiReg1Len<<1); // 将接收到的数据复制到sReg数组中，uiReg1是起始寄存器地址，uiReg1Len是寄存器数量，每个寄存器占2字节，所以复制长度是uiReg1Len<<1
+		   p_WitRegUpdateCbFunc(uiReg1, uiReg1Len);  // 调用回调函数通知寄存器更新，传递起始寄存器地址和寄存器数量
 	  }
-    if(uiReg2Len)
+    if(uiReg2Len) // 如果要更新的第二个寄存器长度不为0，则将接收到的数据复制到sReg数组中，并调用回调函数通知寄存器更新，传递起始寄存器地址和寄存器数量
 	  {
-		   memcpy(&sReg[uiReg2], p_usReg2Val, uiReg2Len<<1);
-		   p_WitRegUpdateCbFunc(uiReg2, uiReg2Len);
+		   memcpy(&sReg[uiReg2], p_usReg2Val, uiReg2Len<<1);// 将接收到的数据复制到sReg数组中，uiReg2是起始寄存器地址，uiReg2Len是寄存器数量，每个寄存器占2字节，所以复制长度是uiReg2Len<<1
+		   p_WitRegUpdateCbFunc(uiReg2, uiReg2Len);  // 调用回调函数通知寄存器更新，传递起始寄存器地址和寄存器数量
 	  }
 }
 
@@ -139,67 +139,34 @@ void WitSerialDataIn(uint8_t ucData)
     uint16_t usCRC16, usTemp, i, usData[4];
     uint8_t ucSum;
 
-    if(p_WitRegUpdateCbFunc == NULL)return ;
-    s_ucWitDataBuff[s_uiWitDataCnt++] = ucData;
-    switch(s_uiProtoclo)
+    if(p_WitRegUpdateCbFunc == NULL)return ;  // 如果回调函数未注册，直接返回，不处理数据
+    s_ucWitDataBuff[s_uiWitDataCnt++] = ucData;  // 将接收到的数据存储到缓冲区中，并增加计数器
+    switch(s_uiProtoclo)  // 根据当前协议类型处理接收到的数据
     {
-        case WIT_PROTOCOL_JY61:
-        case WIT_PROTOCOL_NORMAL:
-            if(s_ucWitDataBuff[0] != 0x55)
+        case WIT_PROTOCOL_JY61: 
+        case WIT_PROTOCOL_NORMAL:  // 如果协议类型是JY61或普通协议，按照特定的数据包格式进行处理
+            if(s_ucWitDataBuff[0] != 0x55)  // 如果数据包的第一个字节不是0x55，说明数据包不合法，丢弃第一个字节并继续等待下一个数据包
             {
-                s_uiWitDataCnt--;
-                memcpy(s_ucWitDataBuff, &s_ucWitDataBuff[1], s_uiWitDataCnt);
+                s_uiWitDataCnt--;  // 减少计数器，因为丢弃了一个字节
+                memcpy(s_ucWitDataBuff, &s_ucWitDataBuff[1], s_uiWitDataCnt); // 将缓冲区中的数据向前移动一位，覆盖掉第一个字节，继续等待下一个数据包
                 return ;
             }
-            if(s_uiWitDataCnt >= 11)
+            if(s_uiWitDataCnt >= 11)  // 如果接收到的数据长度达到11字节，说明一个完整的数据包已经接收完毕，可以进行处理
             {
-                ucSum = __CaliSum(s_ucWitDataBuff, 10);
-                if(ucSum != s_ucWitDataBuff[10])
+                ucSum = __CaliSum(s_ucWitDataBuff, 10);  // 计算接收到的数据包的校验和，校验和是前10个字节的累加和
+                if(ucSum != s_ucWitDataBuff[10])  // 如果计算得到的校验和与数据包中的校验和不匹配，说明数据包可能有误，丢弃第一个字节并继续等待下一个数据包
                 {
                     s_uiWitDataCnt--;
                     memcpy(s_ucWitDataBuff, &s_ucWitDataBuff[1], s_uiWitDataCnt);
                     return ;
                 }
-                usData[0] = ((uint16_t)s_ucWitDataBuff[3] << 8) | (uint16_t)s_ucWitDataBuff[2];
-                usData[1] = ((uint16_t)s_ucWitDataBuff[5] << 8) | (uint16_t)s_ucWitDataBuff[4];
-                usData[2] = ((uint16_t)s_ucWitDataBuff[7] << 8) | (uint16_t)s_ucWitDataBuff[6];
-                usData[3] = ((uint16_t)s_ucWitDataBuff[9] << 8) | (uint16_t)s_ucWitDataBuff[8];
-                CopeWitData(s_ucWitDataBuff[1], usData, 4);
+                usData[0] = ((uint16_t)s_ucWitDataBuff[3] << 8) | (uint16_t)s_ucWitDataBuff[2];  // 将接收到的数据包中的数据部分解析成16位的寄存器值，数据包中的数据部分从第2字节开始，每两个字节组成一个寄存器值
+                usData[1] = ((uint16_t)s_ucWitDataBuff[5] << 8) | (uint16_t)s_ucWitDataBuff[4];  // 解析第二个寄存器值
+                usData[2] = ((uint16_t)s_ucWitDataBuff[7] << 8) | (uint16_t)s_ucWitDataBuff[6];  // 解析第三个寄存器值
+                usData[3] = ((uint16_t)s_ucWitDataBuff[9] << 8) | (uint16_t)s_ucWitDataBuff[8];  // 解析第四个寄存器值
+                CopeWitData(s_ucWitDataBuff[1], usData, 4);  // 根据数据包中的寄存器地址（第1字节）和解析得到的寄存器值，调用函数处理数据
                 s_uiWitDataCnt = 0;
             }
-        break;
-        case WIT_PROTOCOL_905x_MODBUS:
-        case WIT_PROTOCOL_MODBUS:
-            if(s_uiWitDataCnt > 2)
-            {
-                if(s_ucWitDataBuff[1] != FuncR)
-                {
-                    s_uiWitDataCnt--;
-                    memcpy(s_ucWitDataBuff, &s_ucWitDataBuff[1], s_uiWitDataCnt);
-                    return ;
-                }
-                if(s_uiWitDataCnt < (s_ucWitDataBuff[2] + 5))return ;
-                usTemp = ((uint16_t)s_ucWitDataBuff[s_uiWitDataCnt-2] << 8) | s_ucWitDataBuff[s_uiWitDataCnt-1];
-                usCRC16 = __CRC16(s_ucWitDataBuff, s_uiWitDataCnt-2);
-                if(usTemp != usCRC16)
-                {
-                    s_uiWitDataCnt--;
-                    memcpy(s_ucWitDataBuff, &s_ucWitDataBuff[1], s_uiWitDataCnt);
-                    return ;
-                }
-                usTemp = s_ucWitDataBuff[2] >> 1;
-                for(i = 0; i < usTemp; i++)
-                {
-                    sReg[i+s_uiReadRegIndex] = ((uint16_t)s_ucWitDataBuff[(i<<1)+3] << 8) | s_ucWitDataBuff[(i<<1)+4];
-                }
-                p_WitRegUpdateCbFunc(s_uiReadRegIndex, usTemp);
-                s_uiWitDataCnt = 0;
-            }
-        break;
-		case WIT_PROTOCOL_905x_CAN:
-        case WIT_PROTOCOL_CAN:
-        case WIT_PROTOCOL_I2C:
-        s_uiWitDataCnt = 0;
         break;
     }
     if(s_uiWitDataCnt == WIT_DATA_BUFF_SIZE)s_uiWitDataCnt = 0;
@@ -435,6 +402,7 @@ char CheckRange(short sTemp,short sMin,short sMax)
     if ((sTemp>=sMin)&&(sTemp<=sMax)) return 1;
     else return 0;
 }
+
 
 
 /*Acceleration calibration demo*/

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 void PanMotor_Init(Motor_Driver *motor)
 {
-    motor->var.Kp = 0.02f; // 根据需要调整PID参数
+    motor->var.Kp = 0; // 根据需要调整PID参数
     motor->var.Ki = 0;
     motor->var.Kd = 0;
     motor->var.now = 0.0f;
@@ -20,11 +20,6 @@ void PanMotor_Init(Motor_Driver *motor)
 // 位置控制指令
 void PanMotor_Move(Motor_Driver *motor, float target)
 {
-   /* if(target > motor->var.Move_max) {
-        target = motor->var.Move_max;
-    } else if (target < motor->var.Move_min) {
-        target = motor->var.Move_min;
-    }*/
     WritePosEx(motor->per.Motor_ID, (int16_t)target+motor->var.middle_pos, 90, 30);
 }
 
@@ -38,6 +33,13 @@ int PanMotor_ReadMove(Motor_Driver *motor)
 void PanMotor_Cali(Motor_Driver *motor)
 {
     CalibrationOfs(motor->per.Motor_ID); // 调用中位校准函数
+}
+
+void PanMotor_PID_SET(Motor_Driver *motor,float Kp,float Ki,float Kd)
+{
+    motor->var.Kp = Kp;
+    motor->var.Ki = Ki;
+    motor->var.Kd = Kd;
 }
 
 void PanMPID_OUT(Motor_Driver *motor,float target,float now)
@@ -62,6 +64,7 @@ Motor_Driver* Motor_Create(int Motor_ID,int16_t max,int16_t min,uint16_t middle_
     motor->fun->Motor_Cali = PanMotor_Cali;
     motor->fun->Motor_ReadMove = PanMotor_ReadMove;
     motor->fun->MPID_OUT = PanMPID_OUT;
+    motor->fun->PID_SET = PanMotor_PID_SET;
 
     motor->per.Motor_ID = Motor_ID;
     motor->var.Move_max=max;

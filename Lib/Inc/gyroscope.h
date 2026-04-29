@@ -9,15 +9,37 @@
 #define ANGLE_UPDATE 0x04  //角度更新标志
 #define MAG_UPDATE   0x08  //磁力计更新标志
 #define READ_UPDATE  0x80  //读取更新标志
-
-typedef struct 
+typedef struct GyroPID GyroPID;
+typedef struct GyroData_t GyroData_t;
+typedef struct GyroFun GyroFun;
+struct GyroFun
+{
+    void (*OUT)(GyroData_t *gyro,float target);
+    void (*PID_SET)(GyroPID *pid,float Kp,float Ki,float Kd);
+};
+struct GyroPID
+{
+    float Kp;
+    float Ki;
+    float Kd;
+    float now;
+    float target;
+    float error;
+    float err_prev;
+    float integral;
+    float out;    
+    float differential;
+};
+struct GyroData_t
 {
     float fAcc[3];
     float fGyro[3];
     float fAngle[3];
-}GyroData_t;
+    float myyaw;
+    float mypitch;
+    GyroPID pid;
+    GyroFun *fun;
+};
 void gyroscope_Init(GyroData_t *pGyroData);
 void GetAttitudeData(void);
-float Gyro_YawPID(float target,float now,float Kp,float Ki,float Kd);
-float Gyro_PitchPID(float target,float now,float Kp,float Ki,float Kd);
 #endif

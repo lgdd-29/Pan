@@ -32,7 +32,7 @@ void Motor_Init(StepMotor_Driver *driver)
     driver->var.pid.last_error = 0.0f;
     driver->var.pid.integral = 0.0f;
     driver->var.pid.out = 0.0f;    
-    driver->var.Move_max=1000.0f; // 根据实际情况设置最大移动范围
+    driver->var.Move_max=200.0f; // 根据实际情况设置最大移动范围
 }
 
 void Step_PIDOUT(StepMotor_Driver *driver,float target,float now)
@@ -40,6 +40,10 @@ void Step_PIDOUT(StepMotor_Driver *driver,float target,float now)
     driver->var.pid.target = target;
     driver->var.pid.now = now;
     driver->var.pid.error = driver->var.pid.target - driver->var.pid.now; 
+    if(driver->var.pid.error > 180)  // 处理循环角：误差超过180°时，取最短路径
+        driver->var.pid.error -= 360;
+    else if(driver->var.pid.error < -180) // 处理循环角：误差小于-180°时，取最短路径
+        driver->var.pid.error += 360;
     
     // 增量式公式（无累计，只算变化量）
     float increment =  driver->var.pid.Kp*(driver->var.pid.error - driver->var.pid.last_error) 

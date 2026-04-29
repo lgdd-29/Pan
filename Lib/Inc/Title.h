@@ -6,6 +6,7 @@ typedef struct title_Driver title_Driver;
 typedef struct title_var title_var;
 typedef struct title_fun title_fun;
 typedef struct title_xy title_xy;
+typedef struct title_PID title_PID;
 typedef union {
     uint8_t bytes[8];
     float f;
@@ -23,11 +24,27 @@ struct title_var
   uint8_t tim_flag;  //定时器标志
 };
 
+
+struct title_PID
+{
+    float Kp;
+    float Ki;
+    float Kd;
+    float now;
+    float target;
+    float error;
+    float last_error;
+    float integral;
+    float out;    
+};
+
 struct title_fun
 {
     void (*Init)(title_Driver *title); // 初始化函数指针
     void (*Data_receive)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
     void (*Data_deal)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
+    void (*X_PIDOUT)(title_Driver *title); // X坐标位置控制函数指针
+    void (*X_PIDSET)(title_Driver *title,float Kp,float Ki,float Kd)
 };
 
 struct title_xy
@@ -38,12 +55,14 @@ struct title_xy
     float x;
     float y;
     float mypitch;
+    float myyaw;
 };
 struct title_Driver
 {
     title_var var;
     title_fun *fun;
     title_xy xy;
+    title_PID pid;
 };
 title_Driver* Titile_Create(void);
 

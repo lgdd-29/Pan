@@ -41,12 +41,17 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 StepMotor_Driver *StepMotor;
+
 Motor_Driver *PanMotor;
+
 Menu menu_instance;
 Menu *menu = &menu_instance;
+
 title_Driver *title;
 FloatConvert conv;
-GyroData_t pGyroData={0};
+
+GyroData_t gyroData_instance;
+GyroData_t *pGyroData=&gyroData_instance;
 
 uint8_t keynum=0;
 uint8_t ch=0;
@@ -164,7 +169,7 @@ int main(void)
   PanMotor->fun->Motor_Move(PanMotor,0); // 初始化时先将PanMotor移动到中位位置，确保安全
 
 
-  gyroscope_Init(&pGyroData); // 初始化陀螺仪，传入pGyroData实例地址以供陀螺仪模块访问和更新数据  
+  gyroscope_Init(pGyroData); // 初始化陀螺仪，传入pGyroData实例地址以供陀螺仪模块访问和更新数据  
 
 
   //菜单初始化
@@ -173,7 +178,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态
+  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
@@ -191,7 +196,7 @@ int main(void)
   HAL_UART_Receive_IT(&huart4, &ch, 1);  
 
   //发送0xFF，等待视觉那边准备好接收数据
-  
+   /*
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
@@ -201,7 +206,7 @@ int main(void)
     HAL_UART_Transmit(&huart3, &ready_signal, 1, 20);
     HAL_Delay(500);
   }
-  
+  */  
 
   //发送题目
   /*
@@ -221,28 +226,43 @@ int main(void)
   //打开定时器正式开始工作
   HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
 
+  //TODO 初始PID参数设置
+  title->fun->X_PIDSET(title,1,0,0); // 设置坐标环PID参数，后续可以根据需要调整
+  pGyroData->fun->PID_SET(&pGyroData->pid,1,0,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
-  float yaw_output;
+  PanMotor->fun->PID_SET(PanMotor,0.02,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    //TODO 这里是主循环的核心部分，主要负责处理按键输入和更新菜单显示
+    //TODO while循环
     if(title->var.tim_flag==1)
     {
       title->var.tim_flag=0;
 
+      //TODO 获取陀螺仪数据，更新pGyroData实例中的数据
       GetAttitudeData();
-      title->xy.mypitch=pGyroData.fAngle[0];
-      //yaw_output = Gyro_YawPID(title->xy.x, pGyroData.fAngle[2], 30.0f, 0.2, 0); // 计算偏航角的PID输出
-      PanMotor->fun->MPID_OUT(PanMotor,title->xy.y_offset,0); // 进行位置控制计算，并更新PanMotor的输出
-
-      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
-      //StepMotor->fun->Move(StepMotor,-yaw_output); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      title->xy.mypitch=pGyroData->mypitch; // 将陀螺仪的pitch角度更新到title实例中，以供后续位置控制计算使用
+      title->xy.myyaw=pGyroData->myyaw; // 将陀螺仪的yaw角度更新到title实例中，以供后续位置控制计算使用
 
       
+      //TODO x坐标环
+      // 位置控制计算，将视觉返回的x坐标通过pid伸缩到陀螺仪接收的范围
+      title->fun->X_PIDOUT(title); 
+      // TODO 陀螺仪环
+      // 陀螺仪环，将坐标环输出的值伸缩到合适的范围，作为步进电机PID的目标值
+      pGyroData->fun->OUT(pGyroData,title->pid.out); // 进行位置控制计算，更新pGyroData.pid.out的值
 
+      //TODO y坐标环
+      //云台追踪+补偿环
+      PanMotor->fun->MPID_OUT(PanMotor,title->xy.y_offset,0); // 进行位置控制计算，并更新PanMotor的输出
+
+      //TODO 电机驱动函数
+      StepMotor->fun->Move(StepMotor,pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
+      
+      
       /*测试用*/
       /*
       PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0);
@@ -251,9 +271,9 @@ int main(void)
 
     }
     OLED_Clear();
-    OLED_ShowFloatNum(0, 0, pGyroData.fAngle[0], 3, 3, OLED_8X16);
-    OLED_ShowFloatNum(0, 16, pGyroData.fAngle[1], 3, 3, OLED_8X16);
-    OLED_ShowFloatNum(0, 32, pGyroData.fAngle[2], 3, 3, OLED_8X16);
+    OLED_ShowFloatNum(0, 0, pGyroData->fAngle[0], 3, 3, OLED_8X16);
+    OLED_ShowFloatNum(0, 16, pGyroData->fAngle[1], 3, 3, OLED_8X16);
+    OLED_ShowFloatNum(0, 32, pGyroData->fAngle[2], 3, 3, OLED_8X16);
     OLED_Update();
     /*
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
