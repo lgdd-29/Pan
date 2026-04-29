@@ -133,7 +133,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   StepMotor=StepMotor_Create(&huart1,0x01);
-  PanMotor=Motor_Create(0x01,1000,0,400);
+  PanMotor=Motor_Create(0x01,2800,2000,2200);
   title=Titile_Create();
   /* USER CODE END 1 */
 
@@ -229,7 +229,7 @@ int main(void)
 
   //TODO 初始PID参数设置
   title->fun->X_PIDSET(title,0,0,0); // 设置坐标环PID参数，后续可以根据需要调整
-  pGyroData->fun->PID_SET(&pGyroData->pid,8.0,0.02,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
+  pGyroData->fun->PID_SET(&pGyroData->pid,5.0,0.02,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
   PanMotor->fun->PID_SET(PanMotor,0,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
   while (1)
@@ -393,7 +393,7 @@ static void MX_UART4_Init(void)
 
   /* USER CODE END UART4_Init 1 */
   huart4.Instance = UART4;
-  huart4.Init.BaudRate = 115200;
+  huart4.Init.BaudRate = 230400;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
   huart4.Init.StopBits = UART_STOPBITS_1;
   huart4.Init.Parity = UART_PARITY_NONE;
@@ -459,7 +459,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 250000;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

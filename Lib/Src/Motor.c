@@ -41,7 +41,7 @@ void PanMotor_PID_SET(Motor_Driver *motor,float Kp,float Ki,float Kd)
     motor->var.Kp = Kp;
     motor->var.Ki = Ki;
     motor->var.Kd = Kd;
-    if(motor->var.Ki!=0) motor->var.max_integral=15/Ki; // 根据Ki参数动态调整积分限幅，防止积分过大导致系统不稳定
+    if(motor->var.Ki!=0) motor->var.max_integral=50/Ki; // 根据Ki参数动态调整积分限幅，防止积分过大导致系统不稳定
 }
 
 void PanMPID_OUT(Motor_Driver *motor,float target,float now)
