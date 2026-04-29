@@ -22,6 +22,7 @@ struct Motor_VAR
     float error;
     float last_error;
     float integral;
+    float max_integral;
     float Kp;
     float Ki;
     float Kd;
