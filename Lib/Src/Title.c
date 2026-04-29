@@ -91,12 +91,12 @@ void Data_0xB6(title_Driver *title)
       conv.bytes[1]=title->var.Serial_RxPacket[1];  
       conv.bytes[2]=title->var.Serial_RxPacket[2];
       conv.bytes[3]=title->var.Serial_RxPacket[3];
-      title->xy.x=conv.f-320;
+      title->xy.x=conv.f;
       conv.bytes[0]=title->var.Serial_RxPacket[4];
       conv.bytes[1]=title->var.Serial_RxPacket[5];
       conv.bytes[2]=title->var.Serial_RxPacket[6];
       conv.bytes[3]=title->var.Serial_RxPacket[7];
-      title->xy.y=240-conv.f;
+      title->xy.y=conv.f;
       conv.bytes[0]=title->var.Serial_RxPacket[8];
       conv.bytes[1]=title->var.Serial_RxPacket[9];
       conv.bytes[2]=title->var.Serial_RxPacket[10];

@@ -13,10 +13,10 @@ static int8_t start_line = 0;   // 菜单窗口起始行（新加！）
 //题目数据
 static MenuItem Title_test[] = {
     {"number",NULL,PARAM_UINT16,0,5,1},
-    {"ready",NULL,PARAM_UINT16,0,0,0},
     {"x",NULL,PARAM_FLOAT,0,0,0},
     {"y",NULL,PARAM_FLOAT,0,0,0},
-    {"RxState",NULL,PARAM_UINT16,0,0,0},
+    {"y_offset",NULL,PARAM_FLOAT,0,0,0},
+    {"k",NULL,PARAM_FLOAT,0,0,0},
 };
 // 初始化：把外部实例的成员地址填进去，不使用全局变量！
 void Menu_Init(Menu* menu, void* title)
@@ -30,10 +30,10 @@ void Menu_Init(Menu* menu, void* title)
     menu->count1 = sizeof(Title_test)/sizeof(MenuItem);
 
     menu->items1[0].addr = &mytitle->var.number;
-    menu->items1[1].addr = &mytitle->var.ready;
-    menu->items1[2].addr = &mytitle->xy.x;
-    menu->items1[3].addr = &mytitle->xy.y;
-    menu->items1[4].addr = &mytitle->var.RxState;
+    menu->items1[1].addr = &mytitle->xy.x;
+    menu->items1[2].addr = &mytitle->xy.y;
+    menu->items1[3].addr = &mytitle->xy.y_offset;
+    menu->items1[4].addr = &mytitle->xy.k;
 
 }
 

@@ -133,7 +133,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   StepMotor=StepMotor_Create(&huart1,0x01);
-  PanMotor=Motor_Create(0x01,2800,2000,2200);
+  PanMotor=Motor_Create(0x01,2550,1900,2000);
   title=Titile_Create();
   /* USER CODE END 1 */
 
@@ -182,7 +182,7 @@ int main(void)
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
-  KEY_Driver *key[3] = {     
+  KEY_Driver key[3] = {     
     Key_Create(GPIOD, GPIO_PIN_8),
     Key_Create(GPIOB, GPIO_PIN_15),
     Key_Create(GPIOD, GPIO_PIN_10)
@@ -196,7 +196,6 @@ int main(void)
   HAL_UART_Receive_IT(&huart4, &ch, 1);  
 
   //发送0xFF，等待视觉那边准备好接收数据
-   /*
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
@@ -206,7 +205,7 @@ int main(void)
     HAL_UART_Transmit(&huart3, &ready_signal, 1, 20);
     HAL_Delay(500);
   }
-  */  
+    
 
   //发送题目
   /*
@@ -228,7 +227,7 @@ int main(void)
 
 
   //TODO 初始PID参数设置
-  title->fun->X_PIDSET(title,0,0,0); // 设置坐标环PID参数，后续可以根据需要调整
+  title->fun->X_PIDSET(title,0.1,0,0); // 设置坐标环PID参数，后续可以根据需要调整
   pGyroData->fun->PID_SET(&pGyroData->pid,5.0,0.02,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
   PanMotor->fun->PID_SET(PanMotor,0,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
@@ -261,7 +260,7 @@ int main(void)
 
       //TODO 电机驱动函数
       StepMotor->fun->Move(StepMotor,pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
-      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
+      //PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
       
 
@@ -272,16 +271,9 @@ int main(void)
       */
 
     }
-    OLED_Clear();
-    OLED_ShowFloatNum(0, 0, pGyroData->fAngle[0], 3, 3, OLED_8X16);
-    OLED_ShowFloatNum(0, 16, pGyroData->fAngle[1], 3, 3, OLED_8X16);
-    OLED_ShowFloatNum(0, 32, pGyroData->fAngle[2], 3, 3, OLED_8X16);
-    OLED_Update();
-    /*
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
-    Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
+    
     Menu_Show(menu,key->num); // 根据按键编号更新菜单显示
-    */
   }
   /* USER CODE END 3 */
 }
