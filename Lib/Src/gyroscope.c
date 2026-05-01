@@ -30,8 +30,8 @@ void Gyro_YawPID(GyroData_t* GyroData,float target)
     if (GyroData->pid.error < 30 && GyroData->pid.error > -30) 
          GyroData->pid.integral += GyroData->pid.error;
     // 积分限幅（根据你的电机/舵机调整大小，一般±100~±500）
-    //if(GyroData->pid.integral > 200)  GyroData->pid.integral = 200;
-    //else if(GyroData->pid.integral < -200) GyroData->pid.integral = -200;
+    if(GyroData->pid.integral > 200)  GyroData->pid.integral = 200;
+    else if(GyroData->pid.integral < -200) GyroData->pid.integral = -200;
 
     // ===================== 3. 微分项（标准PID）=====================
     GyroData->pid.differential = GyroData->pid.error - GyroData->pid.err_prev;

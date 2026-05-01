@@ -51,9 +51,9 @@ void DataX_PIDOUT(title_Driver *title)
     title->pid.integral += title->pid.error;
 
     // 3. 位置式 PID 计算：Out = Kp*e + Ki*Integral + Kd*(e - last_e)
-    title->pid.out = 0.0001*((title->pid.Kp * title->pid.error) + 
+    title->pid.out = (title->pid.Kp * title->pid.error) + 
                      (title->pid.Ki * title->pid.integral) + 
-                     (title->pid.Kd * (title->pid.error - title->pid.last_error)));
+                     (title->pid.Kd * (title->pid.error - title->pid.last_error));
 
     // 4. 更新上次偏差，用于下次微分计算
     title->pid.last_error = title->pid.error;
