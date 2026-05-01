@@ -227,7 +227,7 @@ int main(void)
 
 
   //TODO 初始PID参数设置
-  title->fun->X_PIDSET(title,0.0008,0,0); // 设置坐标环PID参数，后续可以根据需要调整
+  title->fun->X_PIDSET(title,0.004,0,0); // 设置坐标环PID参数，后续可以根据需要调整
   pGyroData->fun->PID_SET(&pGyroData->pid,34,0,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
   PanMotor->fun->PID_SET(PanMotor,0.05,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
