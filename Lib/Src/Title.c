@@ -31,8 +31,8 @@ void Title_Init(title_Driver *title)
     title->xy.x=0;
     title->xy.y=0;
     title->xy.y_offset=0;
-    title->xy.h=70;
-    title->xy.h_var=0;
+    title->xy.h=-18.0f;  //1m=-16.0   1.4m=-13.5
+    title->xy.h_var=2.5;
     title->xy.L=0;
     title->xy.k=0;
     title->xy.mypitch=0;
@@ -45,15 +45,15 @@ void DataX_PIDOUT(title_Driver *title)
 
     title->pid.now=title->xy.x;  // 当前X坐标（从接收的数据更新）
     // 1. 计算当前偏差 (目标值 - 当前值)
-    title->pid.error = 0 - title->pid.now;
+    title->pid.error =title->pid.now-0;
 
     // 2. 积分累加 (建议后续根据需要加入积分限幅防饱和)
     title->pid.integral += title->pid.error;
 
     // 3. 位置式 PID 计算：Out = Kp*e + Ki*Integral + Kd*(e - last_e)
-    title->pid.out = (title->pid.Kp * title->pid.error) + 
+    title->pid.out = 0.0001*((title->pid.Kp * title->pid.error) + 
                      (title->pid.Ki * title->pid.integral) + 
-                     (title->pid.Kd * (title->pid.error - title->pid.last_error));
+                     (title->pid.Kd * (title->pid.error - title->pid.last_error)));
 
     // 4. 更新上次偏差，用于下次微分计算
     title->pid.last_error = title->pid.error;
@@ -66,10 +66,11 @@ void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
     title->pid.Kd=Kd;
 }
 
+//TODO h补偿
 void Laser_offset(title_Driver *title)
 {
   title->xy.L=(title->xy.h+title->xy.k*title->xy.h_var)/cos(title->xy.mypitch*PI/180.0f);
-  title->xy.y_offset=title->xy.y-title->xy.L;
+  title->xy.y_offset=title->xy.y+title->xy.L;
 }
 
 //TODO 获取坐标原始数据

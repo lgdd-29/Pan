@@ -6,8 +6,7 @@ struct KEY_Driver
 {
     GPIO_TypeDef *GPIOx;
     uint16_t GPIO_Pin;
-    uint8_t num;
-    uint8_t (*Key_Scan)(KEY_Driver *key,uint8_t num);
 };
-KEY_Driver* Key_Create(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
+uint8_t Key_Scan(KEY_Driver *key,uint8_t num);
+KEY_Driver Key_Create(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 #endif

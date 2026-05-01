@@ -12,7 +12,7 @@ static int8_t start_line = 0;   // 菜单窗口起始行（新加！）
 
 //题目数据
 static MenuItem Title_test[] = {
-    {"number",NULL,PARAM_UINT16,0,5,1},
+    {"h",NULL,PARAM_UINT16,0,100,0.5},
     {"x",NULL,PARAM_FLOAT,0,0,0},
     {"y",NULL,PARAM_FLOAT,0,0,0},
     {"y_offset",NULL,PARAM_FLOAT,0,0,0},
@@ -29,7 +29,7 @@ void Menu_Init(Menu* menu, void* title)
     menu->items1 = Title_test;
     menu->count1 = sizeof(Title_test)/sizeof(MenuItem);
 
-    menu->items1[0].addr = &mytitle->var.number;
+    menu->items1[0].addr = &mytitle->xy.h;
     menu->items1[1].addr = &mytitle->xy.x;
     menu->items1[2].addr = &mytitle->xy.y;
     menu->items1[3].addr = &mytitle->xy.y_offset;

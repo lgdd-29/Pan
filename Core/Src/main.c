@@ -227,10 +227,13 @@ int main(void)
 
 
   //TODO 初始PID参数设置
-  title->fun->X_PIDSET(title,0.1,0,0); // 设置坐标环PID参数，后续可以根据需要调整
-  pGyroData->fun->PID_SET(&pGyroData->pid,5.0,0.02,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
+  title->fun->X_PIDSET(title,10,0,1); // 设置坐标环PID参数，后续可以根据需要调整
+  pGyroData->fun->PID_SET(&pGyroData->pid,1.5,0,0.1); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
-  PanMotor->fun->PID_SET(PanMotor,0,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
+  PanMotor->fun->PID_SET(PanMotor,0.05,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
+
+  GetAttitudeData(); // 获取一次陀螺仪数据，更新pGyroData实例中的数据，确保后续位置控制计算有有效的陀螺仪数据可用
+  title->pid.target=pGyroData->myyaw; // 将PID目标值初始化为当前值，避免启动时产生大误差
   while (1)
   {
     /* USER CODE END WHILE */
@@ -248,11 +251,11 @@ int main(void)
 
       
       //TODO x坐标环
-      // 位置控制计算，将视觉返回的x坐标通过pid伸缩到陀螺仪接收的范围
+      // 位置控制计算，将视觉返回的x坐标通1过pid伸缩到陀螺仪接收的范围
       title->fun->X_PIDOUT(title); 
       // TODO 陀螺仪环
       // 陀螺仪环，将坐标环输出的值伸缩到合适的范围，作为步进电机PID的目标值
-      pGyroData->fun->OUT(pGyroData,title->pid.out); // 进行位置控制计算，更新pGyroData.pid.out的值
+      pGyroData->fun->OUT(pGyroData,-title->pid.out); // 进行位置控制计算，更新pGyroData.pid.out的值
 
       //TODO y坐标环
       //云台追踪+补偿环
@@ -260,7 +263,7 @@ int main(void)
 
       //TODO 电机驱动函数
       StepMotor->fun->Move(StepMotor,pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
-      //PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
+      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
       
 
@@ -272,8 +275,11 @@ int main(void)
 
     }
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
-    
-    Menu_Show(menu,key->num); // 根据按键编号更新菜单显示
+    //keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
+    //Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
+    OLED_Clear();
+    OLED_ShowFloatNum(0, 16, pGyroData->myyaw, 3, 2, OLED_8X16);
+    OLED_Update();
   }
   /* USER CODE END 3 */
 }
