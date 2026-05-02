@@ -27,11 +27,11 @@ void Gyro_YawPID(GyroData_t* GyroData,float target)
         GyroData->pid.error += 360;
 
     // ===================== 2. 积分项 + 积分限幅（防饱和）=====================
-    if (GyroData->pid.error < 30 && GyroData->pid.error > -30) 
+    //if (GyroData->pid.error < 30 && GyroData->pid.error > -30) 
          GyroData->pid.integral += GyroData->pid.error;
     // 积分限幅（根据你的电机/舵机调整大小，一般±100~±500）
-    if(GyroData->pid.integral > 200)  GyroData->pid.integral = 200;
-    else if(GyroData->pid.integral < -200) GyroData->pid.integral = -200;
+    //if(GyroData->pid.integral > 200)  GyroData->pid.integral = 200;
+    //else if(GyroData->pid.integral < -200) GyroData->pid.integral = -200;
 
     // ===================== 3. 微分项（标准PID）=====================
     GyroData->pid.differential = GyroData->pid.error - GyroData->pid.err_prev;
@@ -43,11 +43,12 @@ void Gyro_YawPID(GyroData_t* GyroData,float target)
     GyroData->pid.out = GyroData->pid.Kp * GyroData->pid.error + GyroData->pid.Ki * GyroData->pid.integral + GyroData->pid.Kd * GyroData->pid.differential;
 
     // ===================== 5. 输出限幅（防止电机超量程）=====================
-    if(GyroData->pid.out > 1000)  
-        GyroData->pid.out = 1000;
-    if(GyroData->pid.out < -1000) 
-        GyroData->pid.out = -1000;
-
+   /*
+    if(GyroData->pid.out > 100)  
+        GyroData->pid.out = 100;
+    if(GyroData->pid.out < -100) 
+        GyroData->pid.out = -100;
+    */
     // ===================== 6. 更新历史误差 =====================
     GyroData->pid.err_prev = GyroData->pid.error;
 }

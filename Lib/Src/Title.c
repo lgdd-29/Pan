@@ -31,7 +31,7 @@ void Title_Init(title_Driver *title)
     title->xy.x=0;
     title->xy.y=0;
     title->xy.y_offset=0;
-    title->xy.h=-18.0f;  //1m=-16.0   1.4m=-13.5
+    title->xy.h=22;//-10.0f;  //1m=-16.0   1.4m=-13.5
     title->xy.h_var=2.5;
     title->xy.L=0;
     title->xy.k=0;
@@ -102,7 +102,7 @@ void Data_0xB6(title_Driver *title)
       conv.bytes[1]=title->var.Serial_RxPacket[9];
       conv.bytes[2]=title->var.Serial_RxPacket[10];
       conv.bytes[3]=title->var.Serial_RxPacket[11];
-      title->xy.k=conv.f;
+      //title->xy.k=conv.f;      ////////////////////
       Laser_offset(title);
     }
 

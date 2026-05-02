@@ -227,10 +227,10 @@ int main(void)
 
 
   //TODO 初始PID参数设置
-  title->fun->X_PIDSET(title,0.004,0,0); // 设置坐标环PID参数，后续可以根据需要调整
-  pGyroData->fun->PID_SET(&pGyroData->pid,34,0,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
+  title->fun->X_PIDSET(title,0.01,0,0); // 设置坐标环PID参数，后续可以根据需要调整
+  pGyroData->fun->PID_SET(&pGyroData->pid,36,0.1,0); // 设置陀螺仪环PID参数，后续可以根据需要调整  
 
-  PanMotor->fun->PID_SET(PanMotor,0.05,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
+  PanMotor->fun->PID_SET(PanMotor,0.1,0,0); // 设置PanMotor的PID参数，后续可以根据需要调整
 
   GetAttitudeData(); // 获取一次陀螺仪数据，更新pGyroData实例中的数据，确保后续位置控制计算有有效的陀螺仪数据可用
   title->pid.target=pGyroData->myyaw; // 将PID目标值初始化为当前值，避免启动时产生大误差
