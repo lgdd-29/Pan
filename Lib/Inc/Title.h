@@ -22,6 +22,8 @@ struct title_var
   uint8_t ready;  //视觉那边已经准备好了
   uint8_t number; //题目编号
   uint8_t tim_flag;  //定时器标志
+  uint8_t mode; //模式选择
+  uint8_t mode_next; //模式选择
 };
 
 
@@ -44,7 +46,8 @@ struct title_fun
     void (*Data_receive)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
     void (*Data_deal)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
     void (*X_PIDOUT)(title_Driver *title); // X坐标位置控制函数指针
-    void (*X_PIDSET)(title_Driver *title,float Kp,float Ki,float Kd)
+    void (*X_PIDSET)(title_Driver *title,float Kp,float Ki,float Kd);
+    void (*Laser_offset)(title_Driver *title); // 激光补偿计算函数指针
 };
 
 struct title_xy
@@ -52,7 +55,11 @@ struct title_xy
     float h;
     float h_var;
     float L;
+    float frame_x;
+    float frame_y;
     float y_offset;
+    float laser_x;
+    float laser_y;
     float x;
     float y;
     float mypitch;
