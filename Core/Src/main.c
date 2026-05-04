@@ -233,7 +233,7 @@ int main(void)
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,30,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.07,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.05,0,0); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
@@ -241,9 +241,9 @@ int main(void)
       //框坐标pid
       title->fun->X_PIDSET(title,0.003,0,0); 
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,0.1,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.5,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.15,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.03,0,0); 
     }
 
     //主程序
