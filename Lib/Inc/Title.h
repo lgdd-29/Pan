@@ -48,6 +48,7 @@ struct title_fun
     void (*X_PIDOUT)(title_Driver *title); // X坐标位置控制函数指针
     void (*X_PIDSET)(title_Driver *title,float Kp,float Ki,float Kd);
     void (*Laser_offset)(title_Driver *title); // 激光补偿计算函数指针
+    void (*ReadX)(title_Driver *title);
 };
 
 struct title_xy

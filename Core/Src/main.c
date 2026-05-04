@@ -98,6 +98,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if(huart==&huart3)
   {
     title->fun->Data_receive(title);
+    //TODO x坐标环
+    // 位置控制计算，将视觉返回的x坐标通1过pid伸缩到陀螺仪接收的范围
+    title->fun->X_PIDOUT(title); 
     HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART2里重开
   }
   else if(huart==&huart4)
@@ -207,20 +210,6 @@ int main(void)
   }
     
 
-  //发送题目
-  /*
-  while(title->var.ready==0)
-  {
-    keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
-    if(keynum==5)
-    {
-      title->var.Start_Flag[1]=title->var.number;
-      HAL_UART_Transmit(&huart3,title->var.Start_Flag,3,20);
-    }
-    Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
-  }
-  */
-
 
   //打开定时器正式开始工作
   HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
@@ -240,23 +229,21 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.01,0,0); 
+      title->fun->X_PIDSET(title,0.003,0,0); 
       //陀螺仪pid
-      //pGyroData->fun->PID_SET(&pGyroData->pid,20,0.1,0); 
-      pGyroData->fun->PID_SET(&pGyroData->pid,5,0,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,30,0,0); 
       //云台pid
-      //PanMotor->fun->PID_SET(PanMotor,0.1,0,0); 
-      PanMotor->fun->PID_SET(PanMotor,0,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.07,0,0); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.01,0,0); 
+      title->fun->X_PIDSET(title,0.003,0,0); 
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,36,0.1,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.1,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.15,0,0); 
     }
 
     //主程序
@@ -276,27 +263,26 @@ int main(void)
       {
         title->fun->Laser_offset(title); // 进行激光补偿计算，更新title实例中的相关数据，以供后续位置控制计算使用
         title->xy.x=title->xy.frame_x;
-        title->xy.y=title->xy.y_offset;
+        title->xy.y=title->xy.frame_y;
+        //title->xy.y=title->xy.y_offset;
 
         //判断是否打中框中心，发送标志位给视觉让视觉切换激光打靶
-        if((title->xy.x>-1&&title->xy.x<1)&&(title->xy.y>-1&&title->xy.y<1)) 
+        title->fun->ReadX(title);
+        if(title->var.ready==1) 
         {
           title->var.Start_Flag[1]=0x02;
           Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
-          //HAL_UART_Transmit(&huart3,title->var.Start_Flag,3,20);  //切换模式数据发送给视觉，通知视觉切换到模式2（激光坐标+补偿）
+          HAL_UART_Transmit(&huart3,title->var.Start_Flag,3,20);  //切换模式数据发送给视觉，通知视觉切换到模式2（激光坐标+补偿）
         }
       }
       //激光坐标+补偿
       else if(title->var.mode==2)
       {
-        title->xy.x=title->xy.laser_x; 
-        title->xy.y=title->xy.laser_y;
+        title->xy.x=-title->xy.laser_x; 
+        title->xy.y=-title->xy.laser_y;
 
       }
       
-      //TODO x坐标环
-      // 位置控制计算，将视觉返回的x坐标通1过pid伸缩到陀螺仪接收的范围
-      title->fun->X_PIDOUT(title); 
       // TODO 陀螺仪环
       // 陀螺仪环，将坐标环输出的值伸缩到合适的范围，作为步进电机PID的目标值
       pGyroData->fun->OUT(pGyroData,-title->pid.out); // 进行位置控制计算，更新pGyroData.pid.out的值
@@ -309,13 +295,6 @@ int main(void)
       StepMotor->fun->Move(StepMotor,pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
-      
-
-      /*测试用*/
-      /*
-      PanMotor->fun->MPID_OUT(PanMotor,-pGyroData.fAngle[0],0);
-      PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
-      */
 
     }
     //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示

@@ -45,6 +45,13 @@ void Title_Init(title_Driver *title)
     title->xy.myyaw=0;
 }
 
+void ReadX(title_Driver *title)
+{
+  static uint8_t x0_time=0;
+  if((title->xy.x<1&&title->xy.x>-1)&&(title->xy.y>-1&&title->xy.y<1)) x0_time++;
+  if(x0_time>100) title->var.ready=1;
+}
+
 void DataX_PIDOUT(title_Driver *title)
 {
     if (title == NULL) return;
@@ -195,6 +202,7 @@ title_Driver* Titile_Create(void)
             title->fun->X_PIDOUT = DataX_PIDOUT;
             title->fun->X_PIDSET = DataX_PIDSET; 
             title->fun->Laser_offset = Laser_offset;   
+            title->fun->ReadX=ReadX;
             title->fun->Data_deal = NULL; // 初始时没有数据处理函数，等接收到数据后根据题目类型再设置
         }
     }
