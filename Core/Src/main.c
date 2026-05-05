@@ -241,7 +241,7 @@ int main(void)
       //框坐标pid
       title->fun->X_PIDSET(title,0.003,0,0); 
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.5,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.2,2); 
       //云台pid
       PanMotor->fun->PID_SET(PanMotor,0.03,0,0); 
     }
@@ -297,9 +297,6 @@ int main(void)
       
 
     }
-    //扫描按键状态，返回被按下的按键编号，并根据按键编号更新菜单显示
-    //keynum=Key_Scan(key,3); // 扫描按键状态，返回被按下的按键编号
-    //Menu_Show(menu,keynum); // 根据按键编号更新菜单显示
     OLED_Clear();
     OLED_ShowFloatNum(0, 16, title->pid.out, 3, 2, OLED_8X16);
     OLED_Update();
