@@ -240,11 +240,11 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.007,0,0); 
+      title->fun->X_PIDSET(title,0.004,0,0); 
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,36,1.2,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.2,0.0005,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.1,0.0001,0); 
     }
 
     //主程序
