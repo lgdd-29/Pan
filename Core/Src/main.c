@@ -229,7 +229,7 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.003,0,0); 
+      title->fun->X_PIDSET(title,0.001,0,0); 
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,30,0,0); 
       //云台pid
@@ -298,7 +298,8 @@ int main(void)
 
     }
     OLED_Clear();
-    OLED_ShowFloatNum(0, 16, title->pid.out, 3, 2, OLED_8X16);
+    OLED_ShowFloatNum(0, 16, title->xy.frame_x, 3, 2, OLED_8X16);
+    OLED_ShowFloatNum(0, 32, title->xy.frame_y, 3, 2, OLED_8X16);
     OLED_Update();
   }
   /* USER CODE END 3 */
