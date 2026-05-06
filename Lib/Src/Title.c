@@ -49,7 +49,7 @@ void ReadX(title_Driver *title)
 {
   static uint8_t x0_time=0;
   if((title->xy.x<1&&title->xy.x>-1)&&(title->xy.y>-1&&title->xy.y<1)) x0_time++;
-  if(x0_time>100) title->var.ready=1;
+  if(x0_time>4) title->var.ready=1;
 }
 
 void DataX_PIDOUT(title_Driver *title)

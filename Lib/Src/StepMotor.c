@@ -11,9 +11,9 @@ void Motor_Set_Zero(StepMotor_Driver *driver)
 void Motor_Move(StepMotor_Driver *driver, float val)
 {
     if(val>=0)
-    Emm_V5_Vel_Control(driver,1,(int16_t)val,0,0);
+    Emm_V5_Vel_Control(driver,1,(int16_t)val+0.99,0,0);
     else 
-    Emm_V5_Vel_Control(driver,0,(int16_t)(-val),0,0);
+    Emm_V5_Vel_Control(driver,0,(int16_t)(-val)-0.99,0,0);
 }
 
 void Motor_Stop(StepMotor_Driver *driver)

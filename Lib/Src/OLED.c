@@ -269,49 +269,49 @@ void OLED_WriteData(uint8_t *Data, uint8_t Count)
   */
 void OLED_Init(void)
 {
-	OLED_GPIO_Init();			//先调用底层的端口初始化
-	
-	/*写入一系列的命令，对OLED进行初始化配置*/
-	OLED_WriteCommand(0xAE);	//设置显示开启/关闭，0xAE关闭，0xAF开启
-	
-	OLED_WriteCommand(0xD5);	//设置显示时钟分频比/振荡器频率
-	OLED_WriteCommand(0x80);	//0x00~0xFF
-	
-	OLED_WriteCommand(0xA8);	//设置多路复用率
-	OLED_WriteCommand(0x3F);	//0x0E~0x3F
-	
-	OLED_WriteCommand(0xD3);	//设置显示偏移
-	OLED_WriteCommand(0x00);	//0x00~0x7F
-	
-	OLED_WriteCommand(0x40);	//设置显示开始行，0x40~0x7F
-	
-	OLED_WriteCommand(0xA1);	//设置左右方向，0xA1正常，0xA0左右反置
-	
-	OLED_WriteCommand(0xC8);	//设置上下方向，0xC8正常，0xC0上下反置
+    OLED_GPIO_Init(); // 先调用底层的端口初始化
 
-	OLED_WriteCommand(0xDA);	//设置COM引脚硬件配置
-	OLED_WriteCommand(0x12);
-	
-	OLED_WriteCommand(0x81);	//设置对比度
-	OLED_WriteCommand(0xCF);	//0x00~0xFF
+    /*写入一系列的命令，对OLED进行初始化配置*/
+    OLED_WriteCommand(0xAE); // 设置显示开启/关闭，0xAE关闭，0xAF开启
 
-	OLED_WriteCommand(0xD9);	//设置预充电周期
-	OLED_WriteCommand(0xF1);
+    OLED_WriteCommand(0xD5); // 设置显示时钟分频比/振荡器频率
+    OLED_WriteCommand(0x80); // 0x00~0xFF
 
-	OLED_WriteCommand(0xDB);	//设置VCOMH取消选择级别
-	OLED_WriteCommand(0x30);
+    OLED_WriteCommand(0xA8); // 设置多路复用率
+    OLED_WriteCommand(0x1F); // 0x0E~0x3F
 
-	OLED_WriteCommand(0xA4);	//设置整个显示打开/关闭
+    OLED_WriteCommand(0xD3); // 设置显示偏移
+    OLED_WriteCommand(0x00); // 0x00~0x7F
 
-	OLED_WriteCommand(0xA6);	//设置正常/反色显示，0xA6正常，0xA7反色
+    OLED_WriteCommand(0x40); // 设置显示开始行，0x40~0x7F
 
-	OLED_WriteCommand(0x8D);	//设置充电泵
-	OLED_WriteCommand(0x14);
+    OLED_WriteCommand(0xA1); // 设置左右方向，0xA1正常，0xA0左右反置
 
-	OLED_WriteCommand(0xAF);	//开启显示
-	
-	OLED_Clear();				//清空显存数组
-	OLED_Update();				//更新显示，清屏，防止初始化后未显示内容时花屏
+    OLED_WriteCommand(0xC8); // 设置上下方向，0xC8正常，0xC0上下反置
+
+    OLED_WriteCommand(0xDA); // 设置COM引脚硬件配置
+    OLED_WriteCommand(0x02);
+
+    OLED_WriteCommand(0x81); // 设置对比度
+    OLED_WriteCommand(0xFF); // 0x00~0xFF
+
+    OLED_WriteCommand(0xD9); // 设置预充电周期
+    OLED_WriteCommand(0xF1);
+
+    OLED_WriteCommand(0xDB); // 设置VCOMH取消选择级别
+    OLED_WriteCommand(0x30);
+
+    OLED_WriteCommand(0xA4); // 设置整个显示打开/关闭
+
+    OLED_WriteCommand(0xA6); // 设置正常/反色显示，0xA6正常，0xA7反色
+
+    OLED_WriteCommand(0x8D); // 设置充电泵
+    OLED_WriteCommand(0x14);
+
+    OLED_WriteCommand(0xAF); // 开启显示
+
+    OLED_Clear();  // 清空显存数组
+    OLED_Update(); // 更新显示，清屏，防止初始化后未显示内容时花屏
 }
 
 /**

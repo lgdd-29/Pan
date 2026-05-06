@@ -136,7 +136,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   StepMotor=StepMotor_Create(&huart1,0x01);
-  PanMotor=Motor_Create(0x01,2550,1900,2000);
+  PanMotor=Motor_Create(0x01,2550,1900,2200);
   title=Titile_Create();
   /* USER CODE END 1 */
 
@@ -181,7 +181,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
+  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
@@ -195,6 +195,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   //打开串口中断，准备接收数据
+  HAL_Delay(500); // 延时等待视觉那边上电并准备好发送数据，避免刚开串口中断就接收到无效数据导致程序异常
   HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);
   HAL_UART_Receive_IT(&huart4, &ch, 1);  
 
@@ -239,11 +240,11 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.003,0,0); 
+      title->fun->X_PIDSET(title,0.007,0,0); 
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.2,2); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.2,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.03,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.2,0.0005,0); 
     }
 
     //主程序
@@ -271,7 +272,7 @@ int main(void)
         if(title->var.ready==1) 
         {
           title->var.Start_Flag[1]=0x02;
-          Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
+          Laser_On();  // 对准框之后启动激光
           HAL_UART_Transmit(&huart3,title->var.Start_Flag,3,20);  //切换模式数据发送给视觉，通知视觉切换到模式2（激光坐标+补偿）
         }
       }
@@ -298,8 +299,8 @@ int main(void)
 
     }
     OLED_Clear();
-    OLED_ShowFloatNum(0, 16, title->xy.frame_x, 3, 2, OLED_8X16);
-    OLED_ShowFloatNum(0, 32, title->xy.frame_y, 3, 2, OLED_8X16);
+    OLED_ShowFloatNum(0, 16, title->xy.laser_x, 3, 2, OLED_8X16);
+    OLED_ShowFloatNum(0, 32, title->xy.laser_y, 3, 2, OLED_8X16);
     OLED_Update();
   }
   /* USER CODE END 3 */
