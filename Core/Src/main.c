@@ -203,11 +203,11 @@ int main(void)
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
   uint8_t ready_signal = 0xFF;
-  while(title->var.mode_next==0) 
+  do
   {
     HAL_UART_Transmit(&huart3, &ready_signal, 1, 20);
     HAL_Delay(500);
-  }
+  }while(title->var.mode_next==0); // 等待视觉那边发送数据，通知视觉已经准备好接收数据了
     
 
 

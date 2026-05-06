@@ -18,7 +18,7 @@ void PanMotor_Init(Motor_Driver *motor)
 }
 
 
-// 位置控制指令
+// 速度控制指令
 void PanMotor_Move(Motor_Driver *motor, float target)
 {
     WritePosEx(motor->per.Motor_ID, (int16_t)target+motor->var.middle_pos, 90, 30);
