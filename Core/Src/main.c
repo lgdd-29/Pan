@@ -264,8 +264,7 @@ int main(void)
       {
         title->fun->Laser_offset(title); // 进行激光补偿计算，更新title实例中的相关数据，以供后续位置控制计算使用
         title->xy.x=title->xy.frame_x;
-        title->xy.y=title->xy.frame_y;
-        //title->xy.y=title->xy.y_offset;
+        title->xy.y=title->xy.y_offset;
 
         //判断是否打中框中心，发送标志位给视觉让视觉切换激光打靶
         title->fun->ReadX(title);
