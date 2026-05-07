@@ -49,10 +49,10 @@ void PanMPID_OUT(Motor_Driver *motor,float now)
     motor->var.now=-now;
     motor->var.error = motor->var.now;
     motor->var.integral += motor->var.error;
-    if(motor->var.integral > motor->var.max_integral) motor->var.integral = motor->var.max_integral; // 积分限幅
-    else if(motor->var.integral < -motor->var.max_integral) motor->var.integral = -motor->var.max_integral;
     float derivative = motor->var.error - motor->var.last_error;
     motor->var.out += motor->var.Kp * motor->var.error + motor->var.Ki * motor->var.integral + motor->var.Kd * derivative;
+    if(motor->var.out > motor->var.max_integral) motor->var.out = motor->var.max_integral; // 积分限幅
+    else if(motor->var.out < -motor->var.max_integral) motor->var.out = -motor->var.max_integral;
     motor->var.last_error = motor->var.error;
 }
 
