@@ -16,6 +16,7 @@ struct GyroFun
 {
     void (*OUT)(GyroData_t *gyro,float target);
     void (*PID_SET)(GyroPID *pid,float Kp,float Ki,float Kd);
+    void (*Check_Update)(GyroData_t *pGyroData,uint32_t update_flag);
 };
 struct GyroPID
 {
@@ -37,6 +38,7 @@ struct GyroData_t
     float fAngle[3];
     float myyaw;
     float mypitch;
+    uint8_t Gyro_Updata_Flag;
     GyroPID pid;
     GyroFun *fun;
 };

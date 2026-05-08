@@ -49,8 +49,10 @@ void Gyro_YawPID(GyroData_t* GyroData,float target)
          GyroData->pid.integral = 0;
     }
     // 积分限幅（根据你的电机/舵机调整大小，一般±100~±500）
-    if(GyroData->pid.integral > 200)  GyroData->pid.integral = 200;
-    else if(GyroData->pid.integral < -200) GyroData->pid.integral = -200;
+    if(GyroData->pid.integral > 200)  
+    GyroData->pid.integral = 200;
+    else if(GyroData->pid.integral < -200) 
+    GyroData->pid.integral = -200;
 
     // ===================== 4. 微分项（真实物理阻尼！）=====================
     // 原始 D 项容易受跳变影响，我们直接使用陀螺仪本身的物理角速度作为强大的刹车阻尼项
@@ -77,6 +79,16 @@ void Gyro_PID_SET(GyroPID *pid,float Kp,float Ki,float Kd)
     pid->Kd = Kd;   
 }
 
+// 参数传入你需要检查的掩码，例如 ANGLE_UPDATE
+void Check_Sensor_Update(GyroData_t *pGyroData,uint32_t update_flag)
+ {
+    if (s_cDataUpdate & update_flag) 
+    {
+        s_cDataUpdate &= ~update_flag; // 清除对于的标志位
+        pGyroData->Gyro_Updata_Flag = 1;
+    }
+}
+
 void gyroscope_Init(GyroData_t *pGyroData)
 {
     s_GyroData = pGyroData;
@@ -85,8 +97,11 @@ void gyroscope_Init(GyroData_t *pGyroData)
     WitRegisterCallBack(SensorDataUpdata);
     WitDelayMsRegister(Delayms);
     pGyroData->fun=(GyroFun *)malloc(sizeof(GyroFun));
+    if (pGyroData->fun == NULL) while(1); // 内存分配失败，直接死循环
     pGyroData->fun->OUT=Gyro_YawPID;
     pGyroData->fun->PID_SET=Gyro_PID_SET;
+    pGyroData->fun->Check_Update=Check_Sensor_Update;
+     // 初始化PID参数，根据实际情况调整
 
     pGyroData->pid.Kp = 0.0f;  // 根据实际情况调整PID参数
     pGyroData->pid.Ki = 0.0f;
@@ -100,6 +115,7 @@ void gyroscope_Init(GyroData_t *pGyroData)
     pGyroData->pid.differential = 0.0f;
     pGyroData->myyaw=0;
     pGyroData->mypitch=0;
+    pGyroData->Gyro_Updata_Flag=0;
 }
 
 
