@@ -6,7 +6,6 @@
 extern UART_HandleTypeDef huart4;
 
 static volatile char s_cDataUpdate = 0;
-const uint32_t c_uiBaud[10] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
 
 static void SensorUartSend(uint8_t *p_data, uint32_t uiSize);
 static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum);

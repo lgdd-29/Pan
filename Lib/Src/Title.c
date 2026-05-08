@@ -50,7 +50,7 @@ void XYRead(title_Driver *title)
 {
   static uint8_t mytime=0;
   if((title->xy.x<1&&title->xy.x>-1)&&(title->xy.y>-1&&title->xy.y<1)) mytime++;
-  if(mytime>4) title->var.ready=1;
+  if(mytime>1) title->var.ready=1;
 }
 
 void DataX_PIDOUT(title_Driver *title)
@@ -153,7 +153,7 @@ void Data_0xA5(title_Driver *title)
       conv.bytes[1]=title->var.Serial_RxPacket[5];
       conv.bytes[2]=title->var.Serial_RxPacket[6];
       conv.bytes[3]=title->var.Serial_RxPacket[7];
-      title->xy.laser_y=conv.f;
+      title->xy.laser_y=conv.f+3;
       conv.bytes[0]=title->var.Serial_RxPacket[8];
       conv.bytes[1]=title->var.Serial_RxPacket[9];
       conv.bytes[2]=title->var.Serial_RxPacket[10];

@@ -184,7 +184,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
+  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
@@ -233,11 +233,11 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.001,0,0); 
+      title->fun->X_PIDSET(title,0.002,0,0); 
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,30,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.01,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.1,0,0); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
@@ -245,9 +245,9 @@ int main(void)
       //框坐标pid
       title->fun->X_PIDSET(title,0.002,0,0); 
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.2,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.5,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.1,0.003,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.2,0.005,0.5); 
     }
 
     //主程序
