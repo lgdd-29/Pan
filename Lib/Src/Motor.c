@@ -50,9 +50,9 @@ void PanMPID_OUT(Motor_Driver *motor,float now)
     motor->var.error = motor->var.now;
     motor->var.integral += motor->var.error;
     float derivative = motor->var.error - motor->var.last_error;
+    if(derivative > motor->var.max_integral) derivative = motor->var.max_integral; // 积分限幅
+    else if(derivative < -motor->var.max_integral) derivative = -motor->var.max_integral;
     motor->var.out += motor->var.Kp * motor->var.error + motor->var.Ki * motor->var.integral + motor->var.Kd * derivative;
-    if(motor->var.out > motor->var.max_integral) motor->var.out = motor->var.max_integral; // 积分限幅
-    else if(motor->var.out < -motor->var.max_integral) motor->var.out = -motor->var.max_integral;
     motor->var.last_error = motor->var.error;
 }
 
@@ -61,7 +61,11 @@ void PanMPID_OUT(Motor_Driver *motor,float now)
 Motor_Driver* Motor_Create(int Motor_ID,int16_t max,int16_t min,uint16_t middle_pos)
 {
     Motor_Driver* motor=(Motor_Driver*)malloc(sizeof(Motor_Driver));
+    if (motor == NULL) return NULL;
+    
     motor->fun = (Motor_FUN *)malloc(sizeof(Motor_FUN));
+    if (motor->fun == NULL) return NULL;
+
     motor->fun->Motor_Init = PanMotor_Init;
     motor->fun->Motor_Move = PanMotor_Move;
     motor->fun->Motor_Cali = PanMotor_Cali;
