@@ -1,3 +1,13 @@
 build
 mx.scratch
 !.settings
+
+.vscode
+.pack
+.eide
+.cmsis
+MDK-ARM
+.clang-format
+.mxproject
+Drivers
+RTE_Components.h
