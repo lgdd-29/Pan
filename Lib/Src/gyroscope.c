@@ -15,60 +15,45 @@ static GyroData_t *s_GyroData;
 
 void Gyro_YawPID(GyroData_t* GyroData,float target)
 {
-    GyroData->pid.now=GyroData->myyaw;  // 当前角度（从陀螺仪数据更新）
-    // ===================== 1. 目标累加与限幅（防止超飞导致超调）=====================
-    GyroData->pid.target+=target; // 目标角度（函数参数传入）
-    
-    // 计算当前虚拟目标与实际位置的偏差
-    float lead_error = GyroData->pid.target - GyroData->pid.now;
-    if (lead_error > 180) lead_error -= 360;
-    else if (lead_error < -180) lead_error += 360;
+    // 1. 读取当前角度
+    GyroData->pid.now = GyroData->myyaw;
 
-    // 限制虚拟目标不能领先实际位置太远（最大领先10度）
+    // ===================== 1. 目标累加、限幅与误差计算 =====================
+    GyroData->pid.target += target;
+
+    // 计算当前虚拟目标与实际位置的偏差 (即 e(k))
+    GyroData->pid.error = GyroData->pid.target - GyroData->pid.now;
+    if (GyroData->pid.error > 180) GyroData->pid.error -= 360;
+    else if (GyroData->pid.error < -180) GyroData->pid.error += 360;
+
+    // 限制虚拟目标不能领先实际位置太远（最大领先5度）
     float max_lead = 5.0f;
-    if (lead_error > max_lead) {
-        GyroData->pid.target = GyroData->pid.now + max_lead;
-    } else if (lead_error < -max_lead) {
-        GyroData->pid.target = GyroData->pid.now - max_lead;
+    if (GyroData->pid.error > max_lead) {
+        GyroData->pid.error = max_lead;
+        GyroData->pid.target = GyroData->pid.now + max_lead; // 同步修正真实 target
+    } else if (GyroData->pid.error < -max_lead) {
+        GyroData->pid.error = -max_lead;
+        GyroData->pid.target = GyroData->pid.now - max_lead; // 同步修正真实 target
     }
-
-    // ===================== 2. 360°循环角度误差计算（核心！）=====================
-    GyroData->pid.error = GyroData->pid.now-GyroData->pid.target; // 计算当前偏差 (目标值 - 当前值)
-    // 处理循环角：误差超过180°或小于-180°时，取最短路径
-    if(GyroData->pid.error > 180)
-        GyroData->pid.error -= 360;
-    else if(GyroData->pid.error < -180)
-        GyroData->pid.error += 360;
-
-    // ===================== 3. 积分项 + 积分分离（防急停过冲）=====================
-    // 只在靠近目标时（误差小于10度）才进行积分累积
-    if (GyroData->pid.error < 10.0f && GyroData->pid.error > -10.0f) {
-         GyroData->pid.integral += GyroData->pid.error;
-    } else {
-         GyroData->pid.integral = 0;
-    }
-    // 积分限幅（根据你的电机/舵机调整大小，一般±100~±500）
-    if(GyroData->pid.integral > 200)  
-    GyroData->pid.integral = 200;
-    else if(GyroData->pid.integral < -200) 
-    GyroData->pid.integral = -200;
-
-    // ===================== 4. 微分项（真实物理阻尼！）=====================
-    // 原始 D 项容易受跳变影响，我们直接使用陀螺仪本身的物理角速度作为强大的刹车阻尼项
-    GyroData->pid.differential = GyroData->fGyro[2];
     
-    // ===================== 5. PID输出计算 =====================
-    GyroData->pid.out = GyroData->pid.Kp * GyroData->pid.error + GyroData->pid.Ki * GyroData->pid.integral + GyroData->pid.Kd * GyroData->pid.differential;
 
-    // ===================== 6. 输出限幅（防止电机超量程）=====================
-   /*
-    if(GyroData->pid.out > 100)  
+    // ===================== 4. 按公式计算增量 Δu(k) =====================
+    float delta_u = GyroData->pid.Kp * (GyroData->pid.error - GyroData->pid.err_prev) 
+                  + GyroData->pid.Ki * GyroData->pid.error 
+                  + GyroData->pid.Kd * (GyroData->pid.error - 2 * GyroData->pid.err_prev + GyroData->pid.err_prev_2);
+
+    // ===================== 5. 计算最终控制量 u(k) = u(k-1) + Δu(k) =====================
+    GyroData->pid.out += delta_u;
+
+    // ===================== 6. 输出限幅（防止电机超量程，和你原来的逻辑保持一致）=====================
+    if (GyroData->pid.out > 100)  
         GyroData->pid.out = 100;
-    if(GyroData->pid.out < -100) 
+    if (GyroData->pid.out < -100) 
         GyroData->pid.out = -100;
-    */
-    // ===================== 7. 更新历史误差 =====================
-    GyroData->pid.err_prev = GyroData->pid.error;
+
+    // ===================== 7. 更新历史误差，为下一次计算做准备 =====================
+    GyroData->pid.err_prev_2 = GyroData->pid.err_prev; 
+    GyroData->pid.err_prev = GyroData->pid.error                                                                                                ;     // e(k-1) ← e(k)
 }
 
 void Gyro_PID_SET(GyroPID *pid,float Kp,float Ki,float Kd)
@@ -109,7 +94,7 @@ void gyroscope_Init(GyroData_t *pGyroData)
     pGyroData->pid.target = 0.0f;
     pGyroData->pid.error = 0.0f;
     pGyroData->pid.err_prev = 0.0f;
-    pGyroData->pid.integral = 0.0f;
+    pGyroData->pid.err_prev_2 = 0.0f;
     pGyroData->pid.out = 0.0f;
     pGyroData->pid.differential = 0.0f;
     pGyroData->myyaw=0;

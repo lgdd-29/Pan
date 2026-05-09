@@ -15,6 +15,7 @@ void PanMotor_Init(Motor_Driver *motor)
     motor->var.target = 0.0f;
     motor->var.error = 0.0f;
     motor->var.out = 0.0f;
+    motor->var.sec_last_error = 0.0f;
 }
 
 
@@ -46,14 +47,27 @@ void PanMotor_PID_SET(Motor_Driver *motor,float Kp,float Ki,float Kd)
 
 void PanMPID_OUT(Motor_Driver *motor,float now)
 {
-    motor->var.now=-now;
+    // 1. 当前值（保持你原来的负号逻辑）
+    motor->var.now = -now;
+
+    // 2. 本次误差 e(k) （你原来没有target，error直接=当前值）
     motor->var.error = motor->var.now;
-    motor->var.integral += motor->var.error;
-    float derivative = motor->var.error - motor->var.last_error;
-    if(motor->var.integral > motor->var.max_integral) motor->var.integral = motor->var.max_integral; // 积分限幅
-    else if(motor->var.integral < -motor->var.max_integral) motor->var.integral = -motor->var.max_integral;
-    motor->var.out += motor->var.Kp * motor->var.error + motor->var.Ki * motor->var.integral + motor->var.Kd * derivative;
-    motor->var.last_error = motor->var.error;
+
+    // ===================== 增量式PID 核心公式 =====================
+    float delta_u = motor->var.Kp * (motor->var.error - motor->var.last_error)
+                  + motor->var.Ki * motor->var.error
+                  + motor->var.Kd * (motor->var.error - 2 * motor->var.last_error + motor->var.sec_last_error);
+
+    // 4. 输出 = 上一次输出 + 增量
+    motor->var.out += delta_u;
+
+    // 5. 输出限幅（舵机必须加，防止超量程）
+    if(motor->var.out > 100)  motor->var.out = 100;
+    if(motor->var.out < -100) motor->var.out = -100;
+
+    // 6. 更新历史误差
+    motor->var.sec_last_error = motor->var.last_error;  // 保存 e(k-1) → 变成下一次 e(k-2)
+    motor->var.last_error = motor->var.error;       // 保存 e(k)   → 变成下一次 e(k-1)
 }
 
 

@@ -21,6 +21,7 @@ struct Motor_VAR
     float target;
     float error;
     float last_error;
+    float sec_last_error;
     float integral;
     float max_integral;
     float Kp;

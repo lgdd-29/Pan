@@ -27,7 +27,7 @@ struct GyroPID
     float target;
     float error;
     float err_prev;
-    float integral;
+    float err_prev_2;
     float out;    
     float differential;
 };
