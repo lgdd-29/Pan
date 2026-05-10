@@ -139,7 +139,9 @@ int main(void)
   title=Titile_Create();
   
   if(StepMotor == NULL || PanMotor == NULL || title == NULL) {
-    while(1); // 内存分配失败
+    while(1) {
+        for(volatile int i=0; i<10000; i++); // 预先加入软延时，避免紧凑死循环卡死SWD仿真器
+    }
   }
   /* USER CODE END 1 */
 
@@ -218,8 +220,6 @@ int main(void)
   //打开定时器正式开始工作
   //HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
 
-  GetAttitudeData(); // 获取一次陀螺仪数据，更新pGyroData实例中的数据，确保后续位置控制计算有有效的陀螺仪数据可用
-  title->pid.target=pGyroData->myyaw; // 将PID目标值初始化为当前值，避免启动时产生大误差
   while (1)
   {
     /* USER CODE END WHILE */
@@ -233,21 +233,21 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.002,0,0); 
+      title->fun->X_PIDSET(title,0.005,0,0);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,30,0,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,36,0.1,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.1,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.05,0,0); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.002,0,0); 
+      title->fun->X_PIDSET(title,0.01,0,0);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,1.5,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,36,0.3,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.2,0.005,0.5); 
+      PanMotor->fun->PID_SET(PanMotor,0.1,0.002,0); 
     }
 
     //主程序
@@ -303,8 +303,8 @@ int main(void)
       StepMotor->fun->Move(StepMotor,pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
     }
     OLED_Clear();
-    OLED_ShowFloatNum(0, 16, -title->pid.out, 5, 5, OLED_8X16);
-    OLED_ShowFloatNum(0, 32, pGyroData->pid.error, 5, 5,OLED_8X16);
+    OLED_ShowFloatNum(0, 16, title->pid.out, 5, 5, OLED_8X16);
+    OLED_ShowFloatNum(0, 32,pGyroData->pid.error , 5, 5,OLED_8X16);
     OLED_ShowFloatNum(0, 48, pGyroData->pid.out, 5, 5,OLED_8X16);
     OLED_Update();
   }
@@ -590,7 +590,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
+  // __disable_irq(); // 屏蔽掉，防止由于时钟配置失败直接死锁导致ST-Link连不上
   while (1)
   {
   }

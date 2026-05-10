@@ -53,24 +53,15 @@ void XYRead(title_Driver *title)
   if(mytime>1) title->var.ready=1;
 }
 
+//FUNCTION x坐标环
 void DataX_PIDOUT(title_Driver *title)
 {
     if (title == NULL) return;
+    title->pid.error =title->xy.x;  // 目标值为0，所以偏差就是当前坐标的负值
 
-    title->pid.now=title->xy.x;  // 当前X坐标（从接收的数据更新）
-    // 1. 计算当前偏差 (目标值 - 当前值)
-    title->pid.error =title->pid.now-0;
 
-    // 2. 积分累加 (建议后续根据需要加入积分限幅防饱和)
-    title->pid.integral += title->pid.error;
-
-    // 3. 位置式 PID 计算：Out = Kp*e + Ki*Integral + Kd*(e - last_e)
-    title->pid.out = (title->pid.Kp * title->pid.error) + 
-                     (title->pid.Ki * title->pid.integral) + 
-                     (title->pid.Kd * (title->pid.error - title->pid.last_error));
-
-    // 4. 更新上次偏差，用于下次微分计算
-    title->pid.last_error = title->pid.error;
+    // 3. 稳态速度式累加：Out += (Kp*e + Ki*Integral + Kd*delta_e)
+    title->pid.out += (title->pid.Kp * title->pid.error);
 }
 
 void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
@@ -80,14 +71,14 @@ void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
     title->pid.Kd=Kd;
 }
 
-//TODO h补偿
+//FUNCTION h补偿
 void Laser_offset(title_Driver *title)
 {
   title->xy.L=(title->xy.h+title->xy.k*title->xy.h_var)/cos(title->xy.mypitch*PI/180.0f);
   title->xy.y_offset=title->xy.frame_y+title->xy.L;
 }
 
-//TODO 获取框坐标原始数据
+//FUNCTION 获取框坐标原始数据
 void Data_0xB6(title_Driver *title)
 {
   if(title->var.RxState==1)
@@ -129,7 +120,7 @@ void Data_0xB6(title_Driver *title)
   }
 }
 
-//TODO 获取激光坐标原始数据
+//FUNCTION 获取激光坐标原始数据
 void Data_0xA5(title_Driver *title)
 {
   if(title->var.RxState==1)
@@ -153,7 +144,7 @@ void Data_0xA5(title_Driver *title)
       conv.bytes[1]=title->var.Serial_RxPacket[5];
       conv.bytes[2]=title->var.Serial_RxPacket[6];
       conv.bytes[3]=title->var.Serial_RxPacket[7];
-      title->xy.laser_y=conv.f+3;
+      title->xy.laser_y=conv.f;
       conv.bytes[0]=title->var.Serial_RxPacket[8];
       conv.bytes[1]=title->var.Serial_RxPacket[9];
       conv.bytes[2]=title->var.Serial_RxPacket[10];

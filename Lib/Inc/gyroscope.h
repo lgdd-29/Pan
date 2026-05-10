@@ -14,7 +14,7 @@ typedef struct GyroData_t GyroData_t;
 typedef struct GyroFun GyroFun;
 struct GyroFun
 {
-    void (*OUT)(GyroData_t *gyro,float target);
+    void (*OUT)(GyroData_t *gyro,double target);
     void (*PID_SET)(GyroPID *pid,float Kp,float Ki,float Kd);
     void (*Check_Update)(GyroData_t *pGyroData,uint32_t update_flag);
 };
@@ -23,13 +23,14 @@ struct GyroPID
     float Kp;
     float Ki;
     float Kd;
-    float now;
-    float target;
-    float error;
-    float err_prev;
-    float err_prev_2;
-    float out;    
-    float differential;
+    double now;
+    double target;
+    double error;
+    double err_prev;
+    double err_prev_2;
+    double integral;
+    double out;    
+    double differential;
 };
 struct GyroData_t
 {

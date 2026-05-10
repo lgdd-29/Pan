@@ -35,12 +35,10 @@ struct title_PID
     float Kp;
     float Ki;
     float Kd;
-    float now;
-    float target;
-    float error;
-    float last_error;
-    float integral;
-    float out;    
+    double now;
+    double target;
+    double error;
+    double out;    
 };
 
 struct title_fun
@@ -58,14 +56,14 @@ struct title_xy
 {
     float h;
     float h_var;
-    float L;
+    double L;
     float frame_x;
     float frame_y;
-    float y_offset;
+    double y_offset;
     float laser_x;
     float laser_y;
-    float x;
-    float y;
+    double x;
+    double y;
     float mypitch;
     float myyaw;
     float k;

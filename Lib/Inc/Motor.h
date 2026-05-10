@@ -17,17 +17,17 @@ struct Motor_FUN
 
 struct Motor_VAR
 {
-    float now;
-    float target;
-    float error;
-    float last_error;
-    float sec_last_error;
-    float integral;
-    float max_integral;
-    float Kp;
-    float Ki;
-    float Kd;
-    float out;
+    double now;
+    double target;
+    double error;
+    double last_error;
+    double sec_last_error;
+    double integral;
+    double max_integral;
+    double Kp;
+    double Ki;
+    double Kd;
+    double out;
     int16_t Move_max;
     int16_t Move_min;
     uint16_t middle_pos;
