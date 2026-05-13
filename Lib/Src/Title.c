@@ -58,10 +58,13 @@ void DataX_PIDOUT(title_Driver *title)
 {
     if (title == NULL) return;
     title->pid.error =title->xy.x;  // 目标值为0，所以偏差就是当前坐标的负值
-
-
-    // 3. 稳态速度式累加：Out += (Kp*e + Ki*Integral + Kd*delta_e)
-    title->pid.out += (title->pid.Kp * title->pid.error);
+    if(title->pid.error<50&&title->pid.error>-50)
+    {
+        title->pid.integral += title->pid.error;  // 积分项
+    }
+    double derivative = title->pid.error - title->pid.last_error;  // 微分项
+    title->pid.last_error = title->pid.error;  // 更新上一次的误差
+    title->pid.out = (title->pid.Kp * title->pid.error+title->pid.Ki * title->pid.integral+title->pid.Kd * derivative);
 }
 
 void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)

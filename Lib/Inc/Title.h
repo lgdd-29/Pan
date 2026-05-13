@@ -38,6 +38,8 @@ struct title_PID
     double now;
     double target;
     double error;
+    double integral;
+    double last_error;
     double out;    
 };
 

@@ -186,7 +186,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
+  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
@@ -208,6 +208,7 @@ int main(void)
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
+  StepMotor->fun->Move(StepMotor,10);
   uint8_t ready_signal = 0xFF;
   do
   {
@@ -233,21 +234,21 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.005,0,0);
+      title->fun->X_PIDSET(title,1.4,0,0.1);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,0.1,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.05,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.2,0.001,0.08); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.01,0,0);
+      title->fun->X_PIDSET(title,1.4,0.003,0.1);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,36,0.3,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.1,0.002,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.3,0.002,0.04); 
     }
 
     //主程序
@@ -260,7 +261,6 @@ int main(void)
       if(title->var.mode==1)
       {
         //为了h系数补偿所以要俯仰角
-        title->xy.mypitch=pGyroData->mypitch; // 将陀螺仪的pitch角度更新到title实例中，以供后续位置控制计算使用
         title->fun->Laser_offset(title); // 进行激光补偿计算，更新title实例中的相关数据，以供后续位置控制计算使用
         title->xy.x=title->xy.frame_x;
         title->xy.y=title->xy.y_offset;
@@ -285,27 +285,13 @@ int main(void)
       //云台追踪+补偿环
       title->fun->X_PIDOUT(title); // 进行位置控制计算，更新title实例中的pid.out的值
       PanMotor->fun->MPID_OUT(PanMotor,title->xy.y); // 进行位置控制计算，并更新PanMotor的输出
+      //TODO 电机驱动函数
+      StepMotor->fun->Move(StepMotor,title->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
     }
-
-
-    pGyroData->fun->Check_Update(pGyroData,ANGLE_UPDATE); // 检查陀螺仪数据是否更新，如果更新了就将陀螺仪数据更新到pGyroData实例中，以供位置控制计算使用
-    if(pGyroData->Gyro_Updata_Flag==1)
-    {
-      pGyroData->Gyro_Updata_Flag=0;
-      GetAttitudeData();
-      
-      // TODO 陀螺仪环
-      // 陀螺仪环，将坐标环输出的值伸缩到合适的范围，作为步进电机PID的目标值
-      pGyroData->fun->OUT(pGyroData,-title->pid.out); // 进行位置控制计算，更新pGyroData.pid.out的值
-      //TODO 电机驱动函数
-      StepMotor->fun->Move(StepMotor,pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
-    }
     OLED_Clear();
-    OLED_ShowFloatNum(0, 16, title->pid.out, 5, 5, OLED_8X16);
-    OLED_ShowFloatNum(0, 32,pGyroData->pid.error , 5, 5,OLED_8X16);
-    OLED_ShowFloatNum(0, 48, pGyroData->pid.out, 5, 5,OLED_8X16);
+    OLED_ShowFloatNum(0, 16, title->pid.integral, 5, 5, OLED_8X16);
     OLED_Update();
   }
   /* USER CODE END 3 */
