@@ -34,6 +34,7 @@ void Title_Init(title_Driver *title)
     title->xy.x=0;
     title->xy.y=0;
     title->xy.frame_x=0;
+    title->xy.last_frame_x=0;
     title->xy.frame_y=0;
     title->xy.laser_x=0;
     title->xy.laser_y=0;
@@ -44,12 +45,26 @@ void Title_Init(title_Driver *title)
     title->xy.k=0;
     title->xy.mypitch=0;
     title->xy.myyaw=0;
+    title->pid.Kp=0;
+    title->pid.Ki=0;
+    title->pid.Kd=0;
+    title->pid.now=0;
+    title->pid.target=0;
+    title->pid.error=0;
+    title->pid.integral=0;
+    title->pid.last_error=0;
+    title->pid.out=0;
+    title->pid.V=0;
+    title->pid.Kff=0;
+    title->pid.ff_out=0;
+    title->pid.Kvff=0;
+    title->pid.vx_ff=0;
 }
 
 void XYRead(title_Driver *title)
 {
   static uint8_t mytime=0;
-  if((title->xy.x<1&&title->xy.x>-1)&&(title->xy.y>-1&&title->xy.y<1)) mytime++;
+  if((title->xy.x<2&&title->xy.x>-2)&&(title->xy.y>-2&&title->xy.y<2)) mytime++;
   if(mytime>1) title->var.ready=1;
 }
 
@@ -57,21 +72,26 @@ void XYRead(title_Driver *title)
 void DataX_PIDOUT(title_Driver *title)
 {
     if (title == NULL) return;
+    float raw_vx = title->xy.x - title->xy.last_frame_x;
+    title->pid.V = 0.5f * raw_vx + 0.5f * title->pid.V; // 对速度进行低通滤波，平滑速度变化 
     title->pid.error =title->xy.x;  // 目标值为0，所以偏差就是当前坐标的负值
-    if(title->pid.error<50&&title->pid.error>-50)
-    {
-        title->pid.integral += title->pid.error;  // 积分项
-    }
+    if(title->pid.error>0) title->pid.vx_ff+=1;
+    else if(title->pid.error<0) title->pid.vx_ff-=1;
+    title->pid.integral += title->pid.error;  // 积分项
     double derivative = title->pid.error - title->pid.last_error;  // 微分项
     title->pid.last_error = title->pid.error;  // 更新上一次的误差
-    title->pid.out = (title->pid.Kp * title->pid.error+title->pid.Ki * title->pid.integral+title->pid.Kd * derivative);
+    title->pid.ff_out = title->pid.Kff * title->pid.V;
+    title->pid.out = (title->pid.Kp * title->pid.error+title->pid.Ki * title->pid.integral+title->pid.Kd * derivative)+title->pid.ff_out+title->pid.Kvff*title->pid.vx_ff;  // PID控制输出加上前馈项
 }
 
-void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
+void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd,float kff,float kvff)
 {
     title->pid.Kp=Kp;
     title->pid.Ki=Ki;
     title->pid.Kd=Kd;
+    title->pid.Kff=kff;
+    title->pid.Kvff=kvff;
+
 }
 
 //FUNCTION h补偿
@@ -100,6 +120,7 @@ void Data_0xB6(title_Driver *title)
       conv.bytes[1]=title->var.Serial_RxPacket[1];  
       conv.bytes[2]=title->var.Serial_RxPacket[2];
       conv.bytes[3]=title->var.Serial_RxPacket[3];
+      title->xy.last_frame_x=title->xy.frame_x;
       title->xy.frame_x=conv.f;
       conv.bytes[0]=title->var.Serial_RxPacket[4];
       conv.bytes[1]=title->var.Serial_RxPacket[5];

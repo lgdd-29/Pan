@@ -70,10 +70,10 @@ uint8_t ch=0;
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim2;
 
-UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
+UART_HandleTypeDef huart6;
 
 /* USER CODE BEGIN PV */
 
@@ -84,9 +84,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_UART4_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_USART6_UART_Init(void);
 /* USER CODE BEGIN PFP */
 //坐标数据
 
@@ -102,10 +102,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     title->fun->Data_receive(title); 
     HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART2里重开
   }
-  else if(huart==&huart4)
+  else if(huart==&huart6)
   {
     WitSerialDataIn(ch);
-    HAL_UART_Receive_IT(&huart4, &ch, 1);  
+    HAL_UART_Receive_IT(&huart6, &ch, 1);  
   }
   
 }
@@ -165,9 +165,9 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_UART4_Init();
   MX_TIM2_Init();
   MX_USART3_UART_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   /*初始化所有已配置的外围设备*/
   title->fun->Init(title); // 初始化题目驱动，传入title实例地址以供题目驱动访问和修改数据
@@ -186,7 +186,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态 ////////////////////////////////////////////////////////////////
+  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态
 
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
@@ -202,14 +202,18 @@ int main(void)
   //打开串口中断，准备接收数据
   HAL_Delay(500); // 延时等待视觉那边上电并准备好发送数据，避免刚开串口中断就接收到无效数据导致程序异常
   HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);
-  HAL_UART_Receive_IT(&huart4, &ch, 1);  
+  HAL_UART_Receive_IT(&huart6, &ch, 1);  
 
   //发送0xFF，等待视觉那边准备好接收数据
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
-  StepMotor->fun->Move(StepMotor,10);
   uint8_t ready_signal = 0xFF;
+  while(keynum==0)
+  {
+    keynum=Key_Scan(key,3); // 扫描按键，等待按键被按下以继续程序
+    if(keynum!=0) StepMotor->fun->Move(StepMotor,30); // 发送准备信号前先确保电机停止，避免安全问题
+  }
   do
   {
     HAL_UART_Transmit(&huart3, &ready_signal, 1, 20);
@@ -234,21 +238,22 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.4,0,0.1);
+      title->fun->X_PIDSET(title,1.0,0,0.1,0,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.2,0.001,0.08); 
+      PanMotor->fun->PID_SET(PanMotor,0.15,0.001,0.04); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.4,0.003,0.1);
+      title->fun->X_PIDSET(title,1.0,0.001,0.1,0,0.3);
+      //title->fun->X_PIDSET(title,1.0,0.001,0.1,0,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.3,0.002,0.04); 
+      PanMotor->fun->PID_SET(PanMotor,0.2,0.001,0.04); 
     }
 
     //主程序
@@ -263,7 +268,7 @@ int main(void)
         //为了h系数补偿所以要俯仰角
         title->fun->Laser_offset(title); // 进行激光补偿计算，更新title实例中的相关数据，以供后续位置控制计算使用
         title->xy.x=title->xy.frame_x;
-        title->xy.y=title->xy.y_offset;
+        title->xy.y=title->xy.frame_y+20;
 
         //判断是否打中框中心，发送标志位给视觉让视觉切换激光打靶
         title->fun->XYRead(title);
@@ -290,8 +295,17 @@ int main(void)
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
     }
+    /*
+    Check_Sensor_Update(pGyroData,ANGLE_UPDATE); // 检查陀螺仪数据更新标志位，如果有新的姿态数据更新了，就将pGyroData实例中的Gyro_Updata_Flag置位，通知主循环可以进行姿态相关的计算了
+    if(pGyroData->Gyro_Updata_Flag==1)
+    {
+      pGyroData->Gyro_Updata_Flag=0;
+      pGyroData->fun->OUT(pGyroData); // 进行姿态相关的计算，更新pGyroData实例中的pid.out的值，以供后续位置控制计算使用
+    }*/
+    //GetAttitudeData(); // 从陀螺仪模块获取当前的姿态数据，并更新pGyroData实例中的相关数据，以供后续计算使用
     OLED_Clear();
-    OLED_ShowFloatNum(0, 16, title->pid.integral, 5, 5, OLED_8X16);
+    OLED_ShowFloatNum(0, 16, title->xy.x, 5, 5, OLED_8X16);
+    OLED_ShowFloatNum(0, 32, title->xy.y, 5, 5, OLED_8X16);
     OLED_Update();
   }
   /* USER CODE END 3 */
@@ -384,39 +398,6 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-
-}
-
-/**
-  * @brief UART4 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_UART4_Init(void)
-{
-
-  /* USER CODE BEGIN UART4_Init 0 */
-
-  /* USER CODE END UART4_Init 0 */
-
-  /* USER CODE BEGIN UART4_Init 1 */
-
-  /* USER CODE END UART4_Init 1 */
-  huart4.Instance = UART4;
-  huart4.Init.BaudRate = 230400;
-  huart4.Init.WordLength = UART_WORDLENGTH_8B;
-  huart4.Init.StopBits = UART_STOPBITS_1;
-  huart4.Init.Parity = UART_PARITY_NONE;
-  huart4.Init.Mode = UART_MODE_TX_RX;
-  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN UART4_Init 2 */
-
-  /* USER CODE END UART4_Init 2 */
 
 }
 
@@ -520,6 +501,39 @@ static void MX_USART3_UART_Init(void)
 }
 
 /**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 230400;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -536,6 +550,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);

@@ -41,6 +41,11 @@ struct title_PID
     double integral;
     double last_error;
     double out;    
+    double ff_out;
+    double V;             // 目标在X轴的运动速度（求导出来的）
+    double vx_ff;  // 速度前馈项，基于目标速度的前馈输出
+    double Kff;          // X轴前馈比例系数
+    double Kvff;         // 速度前馈比例系数
 };
 
 struct title_fun
@@ -49,7 +54,7 @@ struct title_fun
     void (*Data_receive)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
     void (*Data_deal)(title_Driver *title); // 数据处理函数指针，根据不同的题目调用不同的处理函数
     void (*X_PIDOUT)(title_Driver *title); // X坐标位置控制函数指针
-    void (*X_PIDSET)(title_Driver *title,float Kp,float Ki,float Kd);
+    void (*X_PIDSET)(title_Driver *title,float Kp,float Ki,float Kd,float kff,float kvff); // X坐标PID参数设置函数指针
     void (*Laser_offset)(title_Driver *title); // 激光补偿计算函数指针
     void (*XYRead)(title_Driver *title);
 };
@@ -60,6 +65,7 @@ struct title_xy
     float h_var;
     double L;
     float frame_x;
+    float last_frame_x;
     float frame_y;
     double y_offset;
     float laser_x;

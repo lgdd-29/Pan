@@ -3,7 +3,7 @@
 #include "uart4.h"
 #include "gyroscope.h"
 #include "stdlib.h"
-extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart6;
 
 static volatile char s_cDataUpdate = 0;
 
