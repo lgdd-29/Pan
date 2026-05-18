@@ -54,11 +54,13 @@ void Title_Init(title_Driver *title)
     title->pid.integral=0;
     title->pid.last_error=0;
     title->pid.out=0;
-    title->pid.V=0;
-    title->pid.Kff=0;
+    title->pid.V_error=0;
+    title->pid.Kv_error=0;
     title->pid.ff_out=0;
     title->pid.Kvff=0;
     title->pid.vx_ff=0;
+    title->xy.V_ff=0;
+    title->xy.lost_laser=0;
 }
 
 void XYRead(title_Driver *title)
@@ -73,25 +75,22 @@ void DataX_PIDOUT(title_Driver *title)
 {
     if (title == NULL) return;
     float raw_vx = title->xy.x - title->xy.last_frame_x;
-    title->pid.V = 0.5f * raw_vx + 0.5f * title->pid.V; // 对速度进行低通滤波，平滑速度变化 
+    title->pid.V_error = 0.5f * raw_vx + 0.5f * title->pid.V_error; // 对速度进行低通滤波，平滑速度变化 
     title->pid.error =title->xy.x;  // 目标值为0，所以偏差就是当前坐标的负值
     if(title->pid.error>0) title->pid.vx_ff+=1;
     else if(title->pid.error<0) title->pid.vx_ff-=1;
     title->pid.integral += title->pid.error;  // 积分项
     double derivative = title->pid.error - title->pid.last_error;  // 微分项
     title->pid.last_error = title->pid.error;  // 更新上一次的误差
-    title->pid.ff_out = title->pid.Kff * title->pid.V;
+    title->pid.ff_out = title->pid.Kv_error * title->pid.V_error;
     title->pid.out = (title->pid.Kp * title->pid.error+title->pid.Ki * title->pid.integral+title->pid.Kd * derivative)+title->pid.ff_out+title->pid.Kvff*title->pid.vx_ff;  // PID控制输出加上前馈项
 }
 
-void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd,float kff,float kvff)
+void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)
 {
     title->pid.Kp=Kp;
     title->pid.Ki=Ki;
     title->pid.Kd=Kd;
-    title->pid.Kff=kff;
-    title->pid.Kvff=kvff;
-
 }
 
 //FUNCTION h补偿

@@ -107,6 +107,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     WitSerialDataIn(ch);
     HAL_UART_Receive_IT(&huart6, &ch, 1);  
   }
+  else if(huart==&huart1)
+  {
+    HAL_UART_Receive_IT(&huart1, &title->var.number, 1);  
+  }
   
 }
 
@@ -203,23 +207,30 @@ int main(void)
   HAL_Delay(500); // 延时等待视觉那边上电并准备好发送数据，避免刚开串口中断就接收到无效数据导致程序异常
   HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);
   HAL_UART_Receive_IT(&huart6, &ch, 1);  
+  HAL_UART_Receive_IT(&huart1, &title->var.number, 1);  
 
-  //发送0xFF，等待视觉那边准备好接收数据
+
+  //等待小车指令
+  OLED_Clear();
+  OLED_ShowString(0, 0, "Waiting for car", OLED_8X16);
+  OLED_Update();
+  while(title->var.number==0);
+  if(title->var.number==0xA5) StepMotor->fun->Move(StepMotor,30);  //先转向找到框，再等待视觉数据，最后再转回中位
+  else if(title->var.number==0x5A) StepMotor->fun->Move(StepMotor,-30);  //先转向找到框，再等待视觉数据，最后再转回中位
+
+
+  //告诉视觉我们已经准备好
   OLED_Clear();
   OLED_ShowString(0, 0, "sending 0xFF", OLED_8X16);
   OLED_Update();
   uint8_t ready_signal = 0xFF;
-  while(keynum==0)
-  {
-    keynum=Key_Scan(key,3); // 扫描按键，等待按键被按下以继续程序
-    if(keynum!=0) StepMotor->fun->Move(StepMotor,30); // 发送准备信号前先确保电机停止，避免安全问题
-  }
   do
   {
     HAL_UART_Transmit(&huart3, &ready_signal, 1, 20);
     HAL_Delay(500);
   }while(title->var.mode_next==0); // 等待视觉那边发送数据，通知视觉已经准备好接收数据了
   
+
 
 
   //打开定时器正式开始工作
@@ -238,7 +249,7 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.0,0,0.1,0,0);
+      title->fun->X_PIDSET(title,1.0,0,0.1);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
@@ -248,8 +259,7 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.0,0.001,0.1,0,0.3);
-      //title->fun->X_PIDSET(title,1.0,0.001,0.1,0,0);
+      title->fun->X_PIDSET(title,1.0,0.001,0.1);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
@@ -286,23 +296,57 @@ int main(void)
         title->xy.y=-title->xy.laser_y;
       }
 
+      
+      //TODO 速度前馈
+      if(title->var.number!=0)
+      {
+        if(title->var.number==1)
+        {
+          title->xy.V_ff=17;  //固定速度前馈
+          title->pid.Kvff=0.5; //固定变化速度前馈系数
+        }
+        else if(title->var.number==2)
+        {
+          title->xy.V_ff=15;//固定速度前馈
+          title->pid.Kvff=0.5;//固定变化速度前馈系数
+        }
+        else if(title->var.number==3)
+        {
+          title->xy.V_ff=30;//固定速度前馈
+          title->pid.Kvff=0.5;//固定变化速度前馈系数
+        }
+        else if(title->var.number==4)
+        {
+          title->xy.V_ff=25;//固定速度前馈
+          title->pid.Kvff=0.5;//固定变化速度前馈系数
+        }
+        else if(title->var.number==5)
+        {
+          title->xy.V_ff=30;//固定速度前馈
+          title->pid.Kvff=0.5;//固定变化速度前馈系数
+        }
+        else if(title->var.number==6)
+        {
+          title->xy.V_ff=40;//固定速度前馈
+          title->pid.Kvff=0.5;//固定变化速度前馈系数
+        }
+        else if(title->var.number==7)
+        {
+          title->xy.V_ff=0;//固定速度前馈
+          title->pid.Kvff=0;//固定变化速度前馈系数
+        }
+        title->var.number=0;
+      }
+
       //TODO y坐标环
       //云台追踪+补偿环
       title->fun->X_PIDOUT(title); // 进行位置控制计算，更新title实例中的pid.out的值
       PanMotor->fun->MPID_OUT(PanMotor,title->xy.y); // 进行位置控制计算，并更新PanMotor的输出
       //TODO 电机驱动函数
-      StepMotor->fun->Move(StepMotor,title->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      StepMotor->fun->Move(StepMotor,title->pid.out+title->xy.V_ff); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
     }
-    /*
-    Check_Sensor_Update(pGyroData,ANGLE_UPDATE); // 检查陀螺仪数据更新标志位，如果有新的姿态数据更新了，就将pGyroData实例中的Gyro_Updata_Flag置位，通知主循环可以进行姿态相关的计算了
-    if(pGyroData->Gyro_Updata_Flag==1)
-    {
-      pGyroData->Gyro_Updata_Flag=0;
-      pGyroData->fun->OUT(pGyroData); // 进行姿态相关的计算，更新pGyroData实例中的pid.out的值，以供后续位置控制计算使用
-    }*/
-    //GetAttitudeData(); // 从陀螺仪模块获取当前的姿态数据，并更新pGyroData实例中的相关数据，以供后续计算使用
     OLED_Clear();
     OLED_ShowFloatNum(0, 16, title->xy.x, 5, 5, OLED_8X16);
     OLED_ShowFloatNum(0, 32, title->xy.y, 5, 5, OLED_8X16);
