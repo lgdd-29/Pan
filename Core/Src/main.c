@@ -214,8 +214,8 @@ int main(void)
   OLED_ShowString(0, 0, "Waiting for car", OLED_8X16);
   OLED_Update();
   while(title->var.number==0);
-  if(title->var.number==0xA5) StepMotor->fun->Move(StepMotor,30);  //先转向找到框，再等待视觉数据，最后再转回中位
-  else if(title->var.number==0x5A) StepMotor->fun->Move(StepMotor,-30);  //先转向找到框，再等待视觉数据，最后再转回中位
+  if(title->var.number==0xA5) StepMotor->fun->Move(StepMotor,50);  //先转向找到框，再等待视觉数据，最后再转回中位
+  else if(title->var.number==0x5A) StepMotor->fun->Move(StepMotor,-50);  //先转向找到框，再等待视觉数据，最后再转回中位
 
 
   //告诉视觉我们已经准备好
@@ -229,11 +229,6 @@ int main(void)
     HAL_Delay(500);
   }while(title->var.mode_next==0); // 等待视觉那边发送数据，通知视觉已经准备好接收数据了
   
-
-
-
-  //打开定时器正式开始工作
-  //HAL_TIM_Base_Start_IT(&htim2); // 启动定时器中断，定时器会周期性地触发中断，主循环里会检测到并进行位置控制计算
 
   while (1)
   {
@@ -252,21 +247,27 @@ int main(void)
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.15,0.001,0.04); 
+      PanMotor->fun->PID_SET(PanMotor,0.15,0.001,0.01); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.6,0.0005,0.05);
+      title->fun->X_PIDSET(title,1.0,0,0);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,2.0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.2,0.001,0.04); 
+      PanMotor->fun->PID_SET(PanMotor,0.15,0.001,0.01); 
     }
 
     //主程序
     //收到串口的标志位，专门处理数据，对数据进行补偿或者pid拉伸
+    if(pGyroData->Gyro_Updata_Flag==1)
+    {
+      pGyroData->Gyro_Updata_Flag=0;
+      GetAttitudeData();
+      pGyroData->fun->OUT(pGyroData,0);
+    }    
     if(title->var.uart_flag==1)
     {
       title->var.uart_flag=0;
@@ -301,43 +302,44 @@ int main(void)
       {
         if(title->var.number==1)
         {
-          if(title->xy.V_ff<20) title->xy.V_ff+=1;  //固定速度前馈
-          title->pid.Kvff=1.5; //固定变化速度前馈系数
+          if(title->xy.V_ff==-0) title->xy.V_ff=20;  //固定速度前馈
+          if(title->xy.V_ff<40) title->xy.V_ff+=4;  //固定速度前馈
+          title->pid.Kvff=1; //固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
         }
         else if(title->var.number==2)
         {
-          title->xy.V_ff=30;//固定速度前馈
+          title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=1;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
         }
         else if(title->var.number==3)
         {
-          title->xy.V_ff=40;//固定速度前馈
+          title->xy.V_ff=45;//固定速度前馈
           title->pid.Kvff=1;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
         }
         else if(title->var.number==4)
         {
-          title->xy.V_ff=20;//固定速度前馈
+          title->xy.V_ff=30;//固定速度前馈
           title->pid.Kvff=1;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
         }
         else if(title->var.number==5)
         {
-          title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=1.5;//固定变化速度前馈系数
+          title->xy.V_ff=45;//固定速度前馈
+          title->pid.Kvff=1;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
         }
         else if(title->var.number==6)
         {
-          title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=0.5;//固定变化速度前馈系数
+          title->xy.V_ff=45;//固定速度前馈
+          title->pid.Kvff=1;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
         }
@@ -355,15 +357,14 @@ int main(void)
       title->fun->X_PIDOUT(title); // 进行位置控制计算，更新title实例中的pid.out的值
       PanMotor->fun->MPID_OUT(PanMotor,title->xy.y); // 进行位置控制计算，并更新PanMotor的输出
       //TODO 电机驱动函数
-      StepMotor->fun->Move(StepMotor,title->pid.out+title->xy.V_ff); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      StepMotor->fun->Move(StepMotor,title->pid.out+title->xy.V_ff-pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
     }
+    pGyroData->fun->Check_Update(pGyroData,ACC_UPDATE);
     OLED_Clear();
-    OLED_ShowFloatNum(0, 16, title->xy.x, 5, 5, OLED_8X16);
-    OLED_ShowFloatNum(0, 32, title->xy.y, 5, 5, OLED_8X16);
-    OLED_ShowNum(0, 48, title->xy.lost_laser, 5, OLED_8X16);
-    OLED_ShowNum(0, 64, title->var.number, 5, OLED_8X16);
+    OLED_ShowNum(0, 0, title->xy.lost_laser, 5, OLED_8X16);
+    OLED_ShowFloatNum(0, 16, pGyroData->pid.out, 5, 5, OLED_8X16);
     OLED_Update();
   }
   /* USER CODE END 3 */
