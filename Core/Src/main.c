@@ -192,7 +192,6 @@ int main(void)
   Laser_Init();  // 初始化激光模块，默认关闭激光
   Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态
 
-
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
   KEY_Driver key[3] = {     
     Key_Create(GPIOD, GPIO_PIN_8),
@@ -249,7 +248,7 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.0,0,0.1);
+      title->fun->X_PIDSET(title,0.6,0,0.1);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
@@ -259,7 +258,7 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.0,0.001,0.1);
+      title->fun->X_PIDSET(title,0.6,0.0005,0.05);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
       //云台pid
@@ -302,38 +301,51 @@ int main(void)
       {
         if(title->var.number==1)
         {
-          title->xy.V_ff=17;  //固定速度前馈
-          title->pid.Kvff=0.5; //固定变化速度前馈系数
+          if(title->xy.V_ff<20) title->xy.V_ff+=1;  //固定速度前馈
+          title->pid.Kvff=1.5; //固定变化速度前馈系数
+          title->pid.V_error=0;
+          title->pid.vx_ff=0;
         }
         else if(title->var.number==2)
         {
-          title->xy.V_ff=15;//固定速度前馈
-          title->pid.Kvff=0.5;//固定变化速度前馈系数
+          title->xy.V_ff=30;//固定速度前馈
+          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->pid.V_error=0;
+          title->pid.vx_ff=0;
         }
         else if(title->var.number==3)
         {
-          title->xy.V_ff=30;//固定速度前馈
-          title->pid.Kvff=0.5;//固定变化速度前馈系数
+          title->xy.V_ff=40;//固定速度前馈
+          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->pid.V_error=0;
+          title->pid.vx_ff=0;
         }
         else if(title->var.number==4)
         {
-          title->xy.V_ff=25;//固定速度前馈
-          title->pid.Kvff=0.5;//固定变化速度前馈系数
+          title->xy.V_ff=20;//固定速度前馈
+          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->pid.V_error=0;
+          title->pid.vx_ff=0;
         }
         else if(title->var.number==5)
         {
-          title->xy.V_ff=30;//固定速度前馈
-          title->pid.Kvff=0.5;//固定变化速度前馈系数
+          title->xy.V_ff=40;//固定速度前馈
+          title->pid.Kvff=1.5;//固定变化速度前馈系数
+          title->pid.V_error=0;
+          title->pid.vx_ff=0;
         }
         else if(title->var.number==6)
         {
           title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=0.5;//固定变化速度前馈系数
+          title->pid.V_error=0;
+          title->pid.vx_ff=0;
         }
         else if(title->var.number==7)
         {
           title->xy.V_ff=0;//固定速度前馈
-          title->pid.Kvff=0;//固定变化速度前馈系数
+          title->pid.Kv_error=0;
+          title->pid.Kvff=0;
         }
         title->var.number=0;
       }
@@ -350,6 +362,8 @@ int main(void)
     OLED_Clear();
     OLED_ShowFloatNum(0, 16, title->xy.x, 5, 5, OLED_8X16);
     OLED_ShowFloatNum(0, 32, title->xy.y, 5, 5, OLED_8X16);
+    OLED_ShowNum(0, 48, title->xy.lost_laser, 5, OLED_8X16);
+    OLED_ShowNum(0, 64, title->var.number, 5, OLED_8X16);
     OLED_Update();
   }
   /* USER CODE END 3 */

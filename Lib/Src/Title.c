@@ -173,6 +173,7 @@ void Data_0xA5(title_Driver *title)
       conv.bytes[2]=title->var.Serial_RxPacket[10];
       conv.bytes[3]=title->var.Serial_RxPacket[11];
       title->xy.k=conv.f;      ////////////////////
+      if(title->xy.laser_x==0&&title->xy.laser_y==0) title->xy.lost_laser+=1;  //判断是否没事到激光
     }
 
     title->var.RxState = 0;
