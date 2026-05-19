@@ -244,7 +244,7 @@ int main(void)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.6,0,0.1);
+      title->fun->X_PIDSET(title,0,0,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0); 
       //云台pid
@@ -254,7 +254,7 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.6,0.03,0);
+      title->fun->X_PIDSET(title,0,0.03,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0);
       //云台pid
