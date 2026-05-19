@@ -23,6 +23,7 @@ struct title_var
   uint8_t Yready;  //Y坐标已经准备好了
   uint8_t ready;  //视觉那边已经准备好了
   uint8_t number; //题目编号
+  uint8_t number_flag;
   uint8_t tim_flag;  //定时器标志
   uint8_t uart_flag; //串口标志 
   uint8_t mode; //模式选择

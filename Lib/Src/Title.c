@@ -61,6 +61,7 @@ void Title_Init(title_Driver *title)
     title->pid.vx_ff=0;
     title->xy.V_ff=0;
     title->xy.lost_laser=0;
+    title->var.number_flag=0;
 }
 
 void XYRead(title_Driver *title)
@@ -77,9 +78,11 @@ void DataX_PIDOUT(title_Driver *title)
     float raw_vx = title->xy.x - title->xy.last_frame_x;
     title->pid.V_error = 0.5f * raw_vx + 0.5f * title->pid.V_error; // 对速度进行低通滤波，平滑速度变化 
     title->pid.error =title->xy.x;  // 目标值为0，所以偏差就是当前坐标的负值
-    if(title->pid.error>0) title->pid.vx_ff+=1;
-    else if(title->pid.error<0) title->pid.vx_ff-=1;
+    if(title->pid.error>10) title->pid.vx_ff+=1;
+    else if(title->pid.error<10) title->pid.vx_ff-=1;
     title->pid.integral += title->pid.error;  // 积分项
+    if(title->pid.integral>=20) title->pid.integral=20;
+    else if(title->pid.integral<=-20) title->pid.integral=-20;
     double derivative = title->pid.error - title->pid.last_error;  // 微分项
     title->pid.last_error = title->pid.error;  // 更新上一次的误差
     title->pid.ff_out = title->pid.Kv_error * title->pid.V_error;

@@ -109,6 +109,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   }
   else if(huart==&huart1)
   {
+    title->var.number_flag=1;
     HAL_UART_Receive_IT(&huart1, &title->var.number, 1);  
   }
   
@@ -190,7 +191,7 @@ int main(void)
 
   //激光初始化
   Laser_Init();  // 初始化激光模块，默认关闭激光
-  Laser_Off();  // 打开激光，确保激光在系统启动时就处于工作状态
+  Laser_On();  // 打开激光，确保激光在系统启动时就处于工作状态
 
   // 定义按键数组，包含3个按键的GPIO端口和引脚号
   KEY_Driver key[3] = {     
@@ -214,8 +215,8 @@ int main(void)
   OLED_ShowString(0, 0, "Waiting for car", OLED_8X16);
   OLED_Update();
   while(title->var.number==0);
-  if(title->var.number==0xA5) StepMotor->fun->Move(StepMotor,50);  //先转向找到框，再等待视觉数据，最后再转回中位
-  else if(title->var.number==0x5A) StepMotor->fun->Move(StepMotor,-50);  //先转向找到框，再等待视觉数据，最后再转回中位
+  if(title->var.number==0xA5) StepMotor->fun->Move(StepMotor,100);  //先转向找到框，再等待视觉数据，最后再转回中位
+  else if(title->var.number==0x5A) StepMotor->fun->Move(StepMotor,-100);  //先转向找到框，再等待视觉数据，最后再转回中位
 
 
   //告诉视觉我们已经准备好
@@ -245,19 +246,19 @@ int main(void)
       //框坐标pid
       title->fun->X_PIDSET(title,0.6,0,0.1);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.15,0.001,0.01); 
+      PanMotor->fun->PID_SET(PanMotor,0.08,0,0); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,1.0,0,0);
+      title->fun->X_PIDSET(title,0.6,0.01,0);
       //陀螺仪pid
-      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,2.0); 
+      pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0);
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.15,0.001,0.01); 
+      PanMotor->fun->PID_SET(PanMotor,0.08,0,0); 
     }
 
     //主程序
@@ -277,8 +278,8 @@ int main(void)
       {
         //为了h系数补偿所以要俯仰角
         title->fun->Laser_offset(title); // 进行激光补偿计算，更新title实例中的相关数据，以供后续位置控制计算使用
-        title->xy.x=title->xy.frame_x;
-        title->xy.y=title->xy.frame_y+20;
+        title->xy.x=title->xy.frame_x-30;
+        title->xy.y=title->xy.frame_y;
 
         //判断是否打中框中心，发送标志位给视觉让视觉切换激光打靶
         title->fun->XYRead(title);
@@ -298,56 +299,65 @@ int main(void)
 
       
       //TODO 速度前馈
-      if(title->var.number!=0)
+      if(title->var.number_flag==1)
       {
+        title->var.number_flag=0;
         if(title->var.number==1)
         {
-          if(title->xy.V_ff==-0) title->xy.V_ff=20;  //固定速度前馈
-          if(title->xy.V_ff<40) title->xy.V_ff+=4;  //固定速度前馈
-          title->pid.Kvff=1; //固定变化速度前馈系数
+          title->xy.V_ff=20;//固定速度前馈
+          title->pid.Kvff=0.2; //固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
+          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==2)
         {
           title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->pid.Kvff=0.2;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
+          title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==3)
         {
-          title->xy.V_ff=45;//固定速度前馈
-          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->xy.V_ff=80;//固定速度前馈
+          title->pid.Kvff=0.2;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
+          title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==4)
         {
-          title->xy.V_ff=30;//固定速度前馈
-          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->xy.V_ff=40;//固定速度前馈
+          title->pid.Kvff=0.2;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
+          title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==5)
         {
-          title->xy.V_ff=45;//固定速度前馈
-          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->xy.V_ff=40;//固定速度前馈
+          title->pid.Kvff=0.2;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
+          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==6)
         {
           title->xy.V_ff=45;//固定速度前馈
-          title->pid.Kvff=1;//固定变化速度前馈系数
+          title->pid.Kvff=0.2;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
+          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==7)
         {
           title->xy.V_ff=0;//固定速度前馈
           title->pid.Kv_error=0;
           title->pid.Kvff=0;
+          title->pid.Ki=0;
+          title->pid.Kp=0.6;
+          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         title->var.number=0;
       }
@@ -361,11 +371,9 @@ int main(void)
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
     }
-    pGyroData->fun->Check_Update(pGyroData,ACC_UPDATE);
-    OLED_Clear();
-    OLED_ShowNum(0, 0, title->xy.lost_laser, 5, OLED_8X16);
-    OLED_ShowFloatNum(0, 16, pGyroData->pid.out, 5, 5, OLED_8X16);
-    OLED_Update();
+      OLED_Clear();
+      OLED_ShowNum(0, 0, title->pid.out, 5, OLED_8X16);
+      OLED_Update();
   }
   /* USER CODE END 3 */
 }
