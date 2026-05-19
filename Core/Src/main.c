@@ -254,7 +254,7 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.6,0.01,0);
+      title->fun->X_PIDSET(title,0.6,0.03,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0);
       //云台pid
@@ -320,7 +320,7 @@ int main(void)
         }
         else if(title->var.number==3)
         {
-          title->xy.V_ff=80;//固定速度前馈
+          title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=0.2;//固定变化速度前馈系数
           title->pid.V_error=0;
           title->pid.vx_ff=0;
@@ -372,7 +372,8 @@ int main(void)
       
     }
       OLED_Clear();
-      OLED_ShowNum(0, 0, title->pid.out, 5, OLED_8X16);
+      OLED_ShowFloatNum(0, 0, title->pid.out, 5,5, OLED_8X16);
+      OLED_ShowFloatNum(0, 16, title->pid.integral, 5, 5, OLED_8X16);
       OLED_Update();
   }
   /* USER CODE END 3 */
