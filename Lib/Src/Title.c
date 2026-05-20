@@ -54,8 +54,6 @@ void Title_Init(title_Driver *title)
     title->pid.integral=0;
     title->pid.last_error=0;
     title->pid.out=0;
-    title->pid.V_error=0;
-    title->pid.Kv_error=0;
     title->pid.ff_out=0;
     title->pid.Kvff=0;
     title->pid.vx_ff=0;
@@ -75,18 +73,43 @@ void XYRead(title_Driver *title)
 void DataX_PIDOUT(title_Driver *title)
 {
     if (title == NULL) return;
-    float raw_vx = title->xy.x - title->xy.last_frame_x;
-    title->pid.V_error = 0.5f * raw_vx + 0.5f * title->pid.V_error; // 对速度进行低通滤波，平滑速度变化 
-    title->pid.error =title->xy.x*title->xy.x;  // 目标值为0，所以偏差就是当前坐标的负值
+    else title->pid.error=title->xy.x;
+
+    //固定积分前馈 (修补了之前逻辑，防止目标在中间死区发抖)
+    //PARAMETER 固定变化速度前馈四区参数
     if(title->pid.error>10) title->pid.vx_ff+=1;
-    else if(title->pid.error<10) title->pid.vx_ff-=1;
-    title->pid.integral += title->pid.error;  // 积分项
-    if(title->pid.integral>=30) title->pid.integral=30;
-    else if(title->pid.integral<=-30) title->pid.integral=-30;
+    else if(title->pid.error<-10) title->pid.vx_ff-=1;
+    else title->pid.vx_ff=0;
+
+    //1. 过零清零：每次穿过目标点(误差变号)瞬间，全部清空积分，绝对斩断过头势能
+    if (title->pid.error * title->pid.last_error <= 0) {
+        title->pid.integral=0;
+    }
+
+    //2. 积分分离与抗饱和
+    //PARAMETER  x轴积分范围
+    if(title->pid.error<30 && title->pid.error>-30) // 误差较大时才积累积分，误差小了就不积累了，防止积分过大导致的震荡
+    {
+        // 【核心】漏水积分：旧积分保留90%，加上新的偏差。
+        // 这既能保证累积出可以追上目标的积分，又会在目标停下/反向时迅速“遗忘”掉，极大减小超调
+        title->pid.integral = (title->pid.integral * 0.9f) + (0.1f * title->pid.error);  
+    } else {
+        // 偏差大时，不但不加，还要把历史积分重置
+        title->pid.integral=0;
+    }
+
+    //PARAMETER  积分限幅
+    if(title->pid.integral>3000) title->pid.integral=3000;
+    else if(title->pid.integral<=-3000) title->pid.integral=-3000;
+
+
     double derivative = title->pid.error - title->pid.last_error;  // 微分项
     title->pid.last_error = title->pid.error;  // 更新上一次的误差
-    title->pid.ff_out = title->pid.Kv_error * title->pid.V_error;
-    title->pid.out = (title->pid.Kp * title->pid.error+title->pid.integral+title->pid.Kd * derivative)+title->pid.ff_out+title->pid.Kvff*title->pid.vx_ff;  // PID控制输出加上前馈项
+    title->pid.out = 
+                      (title->pid.Kp * title->pid.error
+                      +title->pid.Ki*title->pid.integral
+                      +title->pid.Kd * derivative)
+                      +title->pid.Kvff*title->pid.vx_ff;  //error>0 +=1
 }
 
 void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)

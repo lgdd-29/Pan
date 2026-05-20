@@ -100,7 +100,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     title->var.uart_flag=1; // 置位串口标志，主循环里会检测到并处理视觉数据
     //TODO 数据处理
     title->fun->Data_receive(title); 
-    HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART2里重开
+    HAL_UART_Receive_IT(&huart3, &title->var.rx_byte, 1);  // 只在USART3里重开
   }
   else if(huart==&huart6)
   {
@@ -238,13 +238,13 @@ int main(void)
     /* USER CODE BEGIN 3 */
     //TODO while循环
 
-    //TODO PID设置
+    //PARAMETER PID设置
     //进行pid切换以及发送切换模式数据给视觉
     if(title->var.mode==0&&title->var.mode_next==1)
     {
       title->var.mode=1;
       //框坐标pid
-      title->fun->X_PIDSET(title,0,0,0);
+      title->fun->X_PIDSET(title,0.6,0,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0); 
       //云台pid
@@ -254,7 +254,7 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0,0.03,0);
+      title->fun->X_PIDSET(title,0.7,0.02,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0);
       //云台pid
@@ -276,7 +276,7 @@ int main(void)
       //框坐标+补偿
       if(title->var.mode==1)
       {
-        //为了h系数补偿所以要俯仰角
+        //PARAMETER 坐标处理
         title->fun->Laser_offset(title); // 进行激光补偿计算，更新title实例中的相关数据，以供后续位置控制计算使用
         title->xy.x=title->xy.frame_x-30;
         title->xy.y=title->xy.frame_y;
@@ -298,7 +298,7 @@ int main(void)
       }
 
       
-      //TODO 速度前馈
+      //PARAMETER 速度前馈值
       if(title->var.number_flag==1)
       {
         title->var.number_flag=0;
@@ -306,54 +306,47 @@ int main(void)
         {
           title->xy.V_ff=20;//固定速度前馈
           title->pid.Kvff=0.2; //固定变化速度前馈系数
-          title->pid.V_error=0;
-          title->pid.vx_ff=0;
+          title->pid.vx_ff=0;  //固定变化的前馈值清零
           title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==2)
         {
           title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.V_error=0;
-          title->pid.vx_ff=0;
+          title->pid.vx_ff=0;//固定变化的前馈值清零
           title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==3)
         {
           title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.V_error=0;
-          title->pid.vx_ff=0;
+          title->pid.vx_ff=0;//固定变化的前馈值清零
           title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==4)
         {
           title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.V_error=0;
-          title->pid.vx_ff=0;
+          title->pid.vx_ff=0;//固定变化的前馈值清零
           title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==5)
         {
           title->xy.V_ff=40;//固定速度前馈
           title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.V_error=0;
-          title->pid.vx_ff=0;
+          title->pid.vx_ff=0;//固定变化的前馈值清零
           title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==6)
         {
           title->xy.V_ff=45;//固定速度前馈
           title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.V_error=0;
-          title->pid.vx_ff=0;
+          title->pid.vx_ff=0;//固定变化的前馈值清零
           title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
         }
         else if(title->var.number==7)
         {
           title->xy.V_ff=0;//固定速度前馈
-          title->pid.Kv_error=0;
           title->pid.Kvff=0;
           title->pid.Ki=0;
           title->pid.Kp=0.6;
@@ -372,7 +365,7 @@ int main(void)
       
     }
       OLED_Clear();
-      OLED_ShowFloatNum(0, 0, title->pid.out, 5,5, OLED_8X16);
+      OLED_ShowFloatNum(0, 0, title->xy.x, 5,5, OLED_8X16);
       OLED_ShowFloatNum(0, 16, title->pid.integral, 5, 5, OLED_8X16);
       OLED_Update();
   }

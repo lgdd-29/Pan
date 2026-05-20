@@ -43,8 +43,6 @@ struct title_PID
     double last_error;
     double out;    
     double ff_out;
-    double V_error;             // 计算出来的速度前馈
-    double Kv_error;          // X轴通过误差算出来的前馈比例系数
     double vx_ff;       // 固定变化的速度前馈    
     double Kvff;         // 固定变化的速度前馈比例系数
 };
