@@ -221,7 +221,7 @@ int main(void)
   while(title->var.number==0);
   if(title->var.number==0xA5) StepMotor->fun->Move(StepMotor,100);  //先转向找到框，再等待视觉数据，最后再转回中位
   else if(title->var.number==0x5A) StepMotor->fun->Move(StepMotor,-100);  //先转向找到框，再等待视觉数据，最后再转回中位
-
+  HAL_UART_Receive_IT(&huart1, title->var.car_rx_buffer, 6);  
 
   //告诉视觉我们已经准备好
   OLED_Clear();
@@ -258,7 +258,7 @@ int main(void)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.6,0,0);
+      title->fun->X_PIDSET(title,0.6,0,0.1);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0);
       //云台pid
@@ -313,7 +313,7 @@ int main(void)
     //TODO 显示
       OLED_Clear();
       OLED_ShowFloatNum(0, 0, title->xy.x, 5,5, OLED_8X16);
-      OLED_ShowFloatNum(0, 16, pGyroData->pid.out, 5, 5, OLED_8X16);
+      OLED_ShowFloatNum(0, 16, title->xy.V_ff, 5, 5, OLED_8X16);
       OLED_Update();
   }
   /* USER CODE END 3 */
