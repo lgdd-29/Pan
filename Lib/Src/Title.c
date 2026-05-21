@@ -31,6 +31,12 @@ void Title_Init(title_Driver *title)
     title->var.Start_Flag[0]=0xA5;
     title->var.Start_Flag[1]=0;
     title->var.Start_Flag[2]=0x5A;
+    title->var.car_rx_buffer[0]=0;
+    title->var.car_rx_buffer[1]=0;
+    title->var.car_rx_buffer[2]=0;
+    title->var.car_rx_buffer[3]=0;
+    title->var.car_rx_buffer[4]=0;
+    title->var.car_rx_buffer[5]=0;
     title->xy.x=0;
     title->xy.y=0;
     title->xy.frame_x=0;
@@ -55,11 +61,8 @@ void Title_Init(title_Driver *title)
     title->pid.last_error=0;
     title->pid.out=0;
     title->pid.ff_out=0;
-    title->pid.Kvff=0;
-    title->pid.vx_ff=0;
     title->xy.V_ff=0;
     title->xy.lost_laser=0;
-    title->var.number_flag=0;
 }
 
 void XYRead(title_Driver *title)
@@ -75,11 +78,6 @@ void DataX_PIDOUT(title_Driver *title)
     if (title == NULL) return;
     else title->pid.error=title->xy.x;
 
-    //固定积分前馈 (修补了之前逻辑，防止目标在中间死区发抖)
-    //PARAMETER 固定变化速度前馈四区参数
-    if(title->pid.error>10) title->pid.vx_ff+=1;
-    else if(title->pid.error<-10) title->pid.vx_ff-=1;
-    else title->pid.vx_ff=0;
 
     //1. 过零清零：每次穿过目标点(误差变号)瞬间，全部清空积分，绝对斩断过头势能
     if (title->pid.error * title->pid.last_error <= 0) {
@@ -108,8 +106,7 @@ void DataX_PIDOUT(title_Driver *title)
     title->pid.out = 
                       (title->pid.Kp * title->pid.error
                       +title->pid.Ki*title->pid.integral
-                      +title->pid.Kd * derivative)
-                      +title->pid.Kvff*title->pid.vx_ff;  //error>0 +=1
+                      +title->pid.Kd * derivative); 
 }
 
 void DataX_PIDSET(title_Driver *title,float Kp,float Ki,float Kd)

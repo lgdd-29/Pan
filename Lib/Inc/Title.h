@@ -18,12 +18,12 @@ struct title_var
   uint8_t pRxPacket; // 接收数据包的索引
   uint8_t rx_byte;  //接收的字节
   uint8_t Serial_RxPacket[12]; // 接收存储数据包
+  uint8_t car_rx_buffer[6];
   uint8_t Serial_RxFlag;  // 接收完成标志
   uint8_t Xready;  //X坐标已经准备好了
   uint8_t Yready;  //Y坐标已经准备好了
   uint8_t ready;  //视觉那边已经准备好了
   uint8_t number; //题目编号
-  uint8_t number_flag;
   uint8_t tim_flag;  //定时器标志
   uint8_t uart_flag; //串口标志 
   uint8_t mode; //模式选择
@@ -43,8 +43,6 @@ struct title_PID
     double last_error;
     double out;    
     double ff_out;
-    double vx_ff;       // 固定变化的速度前馈    
-    double Kvff;         // 固定变化的速度前馈比例系数
 };
 
 struct title_fun

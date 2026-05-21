@@ -109,8 +109,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   }
   else if(huart==&huart1)
   {
-    title->var.number_flag=1;
-    HAL_UART_Receive_IT(&huart1, &title->var.number, 1);  
+    if(title->var.car_rx_buffer[0] == 0xD8 && title->var.car_rx_buffer[5] == 0x8D)
+      {
+        // 把 4 个字节 还原成 float
+        memcpy(&title->xy.V_ff, &title->var.car_rx_buffer[1], sizeof(float));
+      }
+    HAL_UART_Receive_IT(&huart1, title->var.car_rx_buffer, 6);  
   }
   
 }
@@ -248,17 +252,17 @@ int main(void)
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0); 
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.08,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.1,0,0); 
     }
     else if(title->var.mode==1&&title->var.mode_next==2)
     {
       title->var.mode=2;
       //框坐标pid
-      title->fun->X_PIDSET(title,0.7,0.02,0);
+      title->fun->X_PIDSET(title,0.6,0,0);
       //陀螺仪pid
       pGyroData->fun->PID_SET(&pGyroData->pid,0,0,1.0);
       //云台pid
-      PanMotor->fun->PID_SET(PanMotor,0.08,0,0); 
+      PanMotor->fun->PID_SET(PanMotor,0.1,0,0); 
     }
 
     //主程序
@@ -297,76 +301,19 @@ int main(void)
         title->xy.y=-title->xy.laser_y;
       }
 
-      
-      //PARAMETER 速度前馈值
-      if(title->var.number_flag==1)
-      {
-        title->var.number_flag=0;
-        if(title->var.number==1)
-        {
-          title->xy.V_ff=20;//固定速度前馈
-          title->pid.Kvff=0.2; //固定变化速度前馈系数
-          title->pid.vx_ff=0;  //固定变化的前馈值清零
-          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        else if(title->var.number==2)
-        {
-          title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.vx_ff=0;//固定变化的前馈值清零
-          title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        else if(title->var.number==3)
-        {
-          title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.vx_ff=0;//固定变化的前馈值清零
-          title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        else if(title->var.number==4)
-        {
-          title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.vx_ff=0;//固定变化的前馈值清零
-          title->pid.integral=0;  // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        else if(title->var.number==5)
-        {
-          title->xy.V_ff=40;//固定速度前馈
-          title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.vx_ff=0;//固定变化的前馈值清零
-          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        else if(title->var.number==6)
-        {
-          title->xy.V_ff=45;//固定速度前馈
-          title->pid.Kvff=0.2;//固定变化速度前馈系数
-          title->pid.vx_ff=0;//固定变化的前馈值清零
-          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        else if(title->var.number==7)
-        {
-          title->xy.V_ff=0;//固定速度前馈
-          title->pid.Kvff=0;
-          title->pid.Ki=0;
-          title->pid.Kp=0.6;
-          title->pid.integral=0; // 积分清零，防止前馈切换时积分过大导致的突变
-        }
-        title->var.number=0;
-      }
-
       //TODO y坐标环
       //云台追踪+补偿环
       title->fun->X_PIDOUT(title); // 进行位置控制计算，更新title实例中的pid.out的值
       PanMotor->fun->MPID_OUT(PanMotor,title->xy.y); // 进行位置控制计算，并更新PanMotor的输出
       //TODO 电机驱动函数
-      StepMotor->fun->Move(StepMotor,title->pid.out+title->xy.V_ff-pGyroData->pid.out); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
+      StepMotor->fun->Move(StepMotor,title->pid.out-pGyroData->pid.out+title->xy.V_ff); // 根据位置控制计算的输出，发送位置控制指令给StepMotor
       PanMotor->fun->Motor_Move(PanMotor,PanMotor->var.out); // 根据位置控制计算的输出，发送位置控制指令给PanMotor
       
     }
+    //TODO 显示
       OLED_Clear();
       OLED_ShowFloatNum(0, 0, title->xy.x, 5,5, OLED_8X16);
-      OLED_ShowFloatNum(0, 16, title->pid.integral, 5, 5, OLED_8X16);
+      OLED_ShowFloatNum(0, 16, pGyroData->pid.out, 5, 5, OLED_8X16);
       OLED_Update();
   }
   /* USER CODE END 3 */
@@ -544,7 +491,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 256000;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
